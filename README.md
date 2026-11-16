@@ -6,7 +6,7 @@ Las APK están en la carpeta [apk](apk). Hay 4 variantes que se instalan lado a 
 
 | Archivo | Edición | Pantalla |
 |---|---|---|
-| StyPlayer-2.9.2-con-barra.apk | Completa | Con barra del teléfono |
-| StyPlayer-Lite-2.9.2-con-barra.apk | Lite | Con barra del teléfono |
-| StyPlayer-2.9.2-pantalla-completa.apk | Completa | Pantalla completa |
-| StyPlayer-Lite-2.9.2-pantalla-completa.apk | Lite | Pantalla completa |
+| StyPlayer-2.9.3-con-barra.apk | Completa | Con barra del teléfono |
+| StyPlayer-Lite-2.9.3-con-barra.apk | Lite | Con barra del teléfono |
+| StyPlayer-2.9.3-pantalla-completa.apk | Completa | Pantalla completa |
+| StyPlayer-Lite-2.9.3-pantalla-completa.apk | Lite | Pantalla completa |
