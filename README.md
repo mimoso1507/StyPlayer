@@ -1,0 +1,12 @@
+# StyPlayer
+
+App Android para tocar estilos .sty con sinte SF2.
+
+Las APK se descargan desde **Releases**. Hay 4 variantes que se instalan lado a lado:
+
+| Archivo | Edición | Pantalla |
+|---|---|---|
+| StyPlayer-2.9.1-con-barra.apk | Completa | Con barra del teléfono |
+| StyPlayer-Lite-2.9.1-con-barra.apk | Lite | Con barra del teléfono |
+| StyPlayer-2.9.1-pantalla-completa.apk | Completa | Pantalla completa |
+| StyPlayer-Lite-2.9.1-pantalla-completa.apk | Lite | Pantalla completa |
