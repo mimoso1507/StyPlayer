@@ -2,7 +2,7 @@
 
 App Android para tocar estilos .sty con sinte SF2.
 
-Las APK se descargan desde **Releases**. Hay 4 variantes que se instalan lado a lado:
+Las APK están en la carpeta [apk](apk). Hay 4 variantes que se instalan lado a lado:
 
 | Archivo | Edición | Pantalla |
 |---|---|---|
