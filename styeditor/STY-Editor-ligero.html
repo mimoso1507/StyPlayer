@@ -1,0 +1,2137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161c">
+<title>STY Editor</title>
+<style>
+:root { --onacc: #fff;
+  --bg: #111318; --panel: #1b1e26; --panel2: #232733; --line: #2f3442; --text: #e9ecf2; --mute: #9aa3b5;
+  --accent: #4f8cff; --danger: #ff5b5b; --ok: #3ccf8e;
+  --intro: #3ccf8e; --main: #4f8cff; --fill: #f2b544; --brk: #c77dff; --end: #ff7a59;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { padding-bottom: 210px; }
+button { font: inherit; color: inherit; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px; cursor: pointer; }
+button:active { transform: scale(.97); }
+button.pri { background: var(--accent); border-color: var(--accent); color: var(--onacc, #fff); font-weight: 600; }
+button.del { background: transparent; border-color: var(--danger); color: var(--danger); }
+button.ghost { background: transparent; }
+button:disabled { opacity: .4; }
+header { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 12px 16px; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+header h1 { font-size: 18px; margin: 0; flex: 1; letter-spacing: .3px; }
+header h1 span { color: var(--accent); }
+main { padding: 12px 16px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); max-width: 1400px; margin: 0 auto; }
+.empty { grid-column: 1/-1; text-align: center; color: var(--mute); padding: 48px 12px; border: 2px dashed var(--line); border-radius: 16px; }
+.empty b { color: var(--text); display: block; font-size: 17px; margin-bottom: 6px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 12px; min-width: 0; }
+.card.dirty { border-color: #4f8cff88; }
+.ctop { display: flex; gap: 8px; align-items: flex-start; }
+.ctop .nm { flex: 1; min-width: 0; }
+.ctop .nm b { display: block; overflow-wrap: anywhere; }
+.ctop .nm small { color: var(--mute); }
+.tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--panel2); border: 1px solid var(--line); color: var(--mute); margin-right: 4px; }
+.tag.mod { color: var(--accent); border-color: var(--accent); }
+.x { padding: 4px 10px; }
+.grp { margin-top: 10px; }
+.grp h4 { margin: 0 0 6px; font-size: 12px; color: var(--mute); font-weight: 600; text-transform: uppercase; letter-spacing: .6px; display: flex; align-items: center; gap: 6px; }
+.grp h4 i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { position: relative; min-width: 66px; padding: 7px 10px; border-radius: 10px; background: var(--panel2); border: 2px solid transparent; text-align: left; line-height: 1.15; }
+.chip b { display: block; font-size: 15px; }
+.chip small { color: var(--mute); font-size: 11px; }
+.chip.sel { border-color: var(--k); background: color-mix(in srgb, var(--k) 22%, var(--panel2)); }
+.chip.sel::after { content: "✓"; position: absolute; top: 3px; right: 6px; font-size: 12px; color: var(--k); font-weight: 700; }
+.chip.empty0 small { color: var(--danger); }
+.cfoot { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.cfoot button { flex: 1; padding: 8px 10px; font-size: 14px; }
+#bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: color-mix(in srgb, var(--panel) 97%, transparent); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+#bar .row { display: flex; gap: 8px; max-width: 900px; margin: 0 auto; flex-wrap: wrap; align-items: center; }
+#bar .cnt { flex: 1 1 100%; font-size: 13px; color: var(--mute); display: flex; justify-content: space-between; }
+#bar .cnt a { color: var(--accent); cursor: pointer; }
+#bar button { flex: 1; }
+#bar .play { flex: 1 1 100%; display: flex; gap: 10px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+#bar .play button { flex: 0 0 auto; min-width: 128px; }
+#bar .play span { flex: 1; min-width: 0; font-size: 13px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#bar .play.on button { background: var(--danger); border-color: var(--danger); }
+dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 18px; padding: 0; width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 40px); }
+dialog::backdrop { background: rgba(0,0,0,.6); }
+.dlg { padding: 16px; display: grid; gap: 12px; }
+.dlg h3 { margin: 0; font-size: 17px; }
+.dlg p { margin: 0; color: var(--mute); font-size: 14px; }
+.dlg .acts { display: flex; gap: 8px; justify-content: flex-end; }
+.dlg .acts button { min-width: 100px; }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--mute); }
+select, input[type=text] { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; width: 100%; }
+.map { display: grid; gap: 8px; }
+.map .r { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.map .r span { font-weight: 600; }
+.map .r em { color: var(--mute); font-style: normal; }
+.dests { display: grid; gap: 6px; max-height: 28vh; overflow: auto; }
+.dests .dst { background: var(--panel2); border-radius: 10px; padding: 8px 10px; overflow-wrap: anywhere; }
+.mh { font-size: 13px; font-weight: 600; color: var(--accent); margin-top: 4px; overflow-wrap: anywhere; }
+.map { max-height: 34vh; overflow: auto; }
+.dlg.wide { max-height: calc(100vh - 56px); overflow: auto; }
+.edtop, .edrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.edbox { background: var(--panel2); border-radius: 12px; padding: 10px; display: grid; gap: 8px; }
+.edbox .mute, .mute { color: var(--mute); font-size: 12px; }
+.edrow input[type=number], .two input { width: 90px; font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.trk { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; display: grid; gap: 6px; }
+.trk.mut { opacity: .55; }
+.trk .th { display: grid; gap: 2px; }
+.trk .th small { color: var(--mute); margin-left: 26px; }
+.trk .tb { display: flex; flex-wrap: wrap; gap: 6px; }
+.trk .tb button, .edtop button, .edrow button { padding: 6px 10px; font-size: 13px; }
+.pnl { background: var(--panel2); border-radius: 10px; padding: 8px; display: grid; gap: 8px; }
+.two { display: flex; gap: 10px; }
+.themes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.themes .th { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; border-width: 2px; text-align: left; font-weight: 600; }
+.themes .th.on::after { content: " ✓"; }
+.sw { display: flex; gap: 4px; } .sw i { width: 22px; height: 12px; border-radius: 4px; display: inline-block; }
+.warn { font-size: 12px; color: var(--fill); }
+.chk { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.note { font-size: 12px; color: var(--mute); background: var(--panel2); border-radius: 10px; padding: 8px 10px; }
+#toast { position: fixed; left: 50%; bottom: 120px; transform: translate(-50%, 20px); background: #000d; color: #fff; padding: 9px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: .2s; pointer-events: none; z-index: 20; max-width: calc(100vw - 32px); text-align: center; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 420px) { main { grid-template-columns: 1fr; } header h1 { font-size: 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>STY</span> Editor</h1>
+  <button id="undo" disabled title="Deshacer el último cambio">↶ Deshacer</button>
+  <button id="redo" disabled title="Rehacer lo deshecho">↷ Rehacer</button>
+  <button id="themeBtn" title="Tema de colores">🎨</button>
+  <button id="open" class="pri">＋ Abrir</button>
+  <input id="file" type="file" multiple hidden>
+</header>
+<main id="list"></main>
+
+<div id="bar"><div class="row">
+  <div class="play"><button id="bPlay" class="pri">▶ Escuchar</button><span id="pName"></span><label class="chk"><input type="checkbox" id="loop"> Repetir</label></div>
+  <div class="cnt"><span id="cnt"></span><a id="clr">Quitar selección</a></div>
+  <button id="bCopy">Copiar a…</button>
+  <button id="bMove">Mover a…</button>
+  <button id="bEdit">Editar sección</button>
+  <button id="bRen">Cambiar letra</button>
+  <button id="bDel" class="del">Eliminar</button>
+</div></div>
+
+<dialog id="dlg"><form method="dialog" class="dlg" id="dlgBody"></form></dialog>
+<div id="toast"></div>
+
+<script type="text/plain" id="engine-src">// ===== Común: acordes, CASM (lo usan el motor de audio y la interfaz) =====
+const NN = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const fm = (a, b) => ((a % b) + b) % b;
+const CHORDS_L = [
+  ["maj", [0, 4, 7]], ["m", [0, 3, 7]], ["7", [0, 4, 7, 10]], ["m7", [0, 3, 7, 10]],
+  ["maj7", [0, 4, 7, 11]], ["6", [0, 4, 7, 9]], ["m6", [0, 3, 7, 9]], ["sus4", [0, 5, 7]],
+  ["sus2", [0, 2, 7]], ["7sus4", [0, 5, 7, 10]], ["dim", [0, 3, 6]], ["dim7", [0, 3, 6, 9]],
+  ["m7b5", [0, 3, 6, 10]], ["aug", [0, 4, 8]], ["add9", [0, 2, 4, 7]], ["9", [0, 4, 7, 10, 2]], ["m9", [0, 3, 7, 10, 2]],
+  ["maj9", [0, 4, 7, 11, 2]], ["dim9", [0, 3, 6, 9, 2]], ["11", [0, 4, 7, 10, 2, 5]],
+  ["13", [0, 4, 7, 10, 2, 9]], ["7b9", [0, 4, 7, 10, 1]], ["7#9", [0, 4, 7, 10, 3]],
+  ["7#5", [0, 4, 8, 10]], ["7b5", [0, 4, 6, 10]], ["mMaj7", [0, 3, 7, 11]],
+  ["69", [0, 4, 7, 9, 2]], ["madd9", [0, 3, 7, 2]], ["add11", [0, 4, 7, 5]],
+  ["1+5", [0, 7]], ["1+8", [0]]];
+const CHORDS = new Map(CHORDS_L);
+const YAM_TYPE = { maj: 0, "6": 1, maj7: 2, add9: 4, aug: 7, m: 8, m6: 9, m7: 10, m7b5: 11, dim: 17, dim7: 18, "7": 19, "7sus4": 20, "1+8": 30, "1+5": 31, sus4: 32, sus2: 33 };
+const SUP = ["", "¹", "²", "³", "⁴", "⁵", "⁶"];
+const SLASH = 100;
+
+function isCustomType(t) { return t.length > 1 && t[0] === "x" && t.substring(1).split("-").every(s => s !== "" && !isNaN(parseInt(s))); }
+function isChordType(t) { return CHORDS.has(t) || isCustomType(t); }
+function chordIv(t) { return CHORDS.get(t) || (isCustomType(t) ? t.substring(1).split("-").map(s => fm(parseInt(s), 12)) : CHORDS.get("maj")); }
+function customType(iv) { return "x" + iv.join("-"); }
+function yamType(t) {
+  if (t in YAM_TYPE) return YAM_TYPE[t];
+  const iv = new Set(chordIv(t));
+  if (iv.has(3) && iv.has(6)) return 17;
+  if (iv.has(3) && iv.has(10)) return 10;
+  if (iv.has(3)) return 8;
+  if (iv.has(4) && iv.has(10)) return 19;
+  if (iv.has(4) && iv.has(11)) return 2;
+  if (iv.has(4) && iv.has(8)) return 7;
+  if (iv.has(5) && !iv.has(4)) return 32;
+  if (iv.has(2) && !iv.has(4)) return 33;
+  return 0;
+}
+/** Acorde: {root, type, bass (-1 = sin bajo distinto), inv (0 = fundamental)}. */
+function mkChord(root, type, bass = -1, inv = 0) { return { root, type, bass, inv }; }
+function chordName(c) {
+  return (isCustomType(c.type) ? chordIv(c.type).map(i => NN[(c.root + i) % 12]).join(" ") : NN[c.root] + (c.type === "maj" ? "" : c.type)) +
+    (c.inv > 0 ? (SUP[c.inv] || "") : "") + (c.bass >= 0 && c.bass !== c.root ? "/" + NN[c.bass] : "");
+}
+/** Código de inversión: 0..n-1 = inversión real; 100 + intervalo = acorde con barra (bajo distinto). */
+function makeChord(root, type, code) {
+  const iv = chordIv(type);
+  if (code >= SLASH) return mkChord(root, type, fm(root + code - SLASH, 12));
+  if (code >= 1 && code < iv.length) return mkChord(root, type, -1, code);
+  return mkChord(root, type);
+}
+function detectChord(notes) {
+  if (!notes.length) return null;
+  const low = Math.min(...notes);
+  const pcs = new Set(notes.map(n => n % 12));
+  if (pcs.size === 1) return mkChord(low % 12, "maj");
+  let best = null, score = -1;
+  for (const r of pcs) for (const [name, iv] of CHORDS_L) {
+    if (name === "1+8") continue;
+    const set = new Set(iv.map(i => (r + i) % 12));
+    if (set.size !== pcs.size || [...set].some(x => !pcs.has(x))) continue;
+    const s = iv.length * 10 + (r === low % 12 ? 5 : 0);
+    if (s > score) { score = s; best = mkChord(r, name, r !== low % 12 ? low % 12 : -1); }
+  }
+  if (best) return best;
+  const r = low % 12;
+  const rel = new Set([...pcs].map(p => fm(p - r, 12)));
+  const t = rel.has(3) && !rel.has(4) ? (rel.has(10) ? "m7" : "m") : rel.has(10) ? "7" : rel.has(11) ? "maj7" : "maj";
+  return mkChord(r, t);
+}
+
+const Casm = {
+  ROOT_TRANS: 0, ROOT_FIXED: 1, GUITAR: 2, BYPASS: 0, MELODY: 1, CHORD: 2,
+  tab(src, noteMute, chordMute, srcRoot, srcType, ntr, ntt, highKey, low, high, rtr, bass) {
+    return { src, noteMute, chordMute, srcRoot, srcType, ntr, ntt, highKey, low, high, rtr, bass };
+  },
+  defaults: null,
+  def(ch) {
+    if (!this.defaults) this.defaults = Array.from({ length: 16 }, (_, c) =>
+      c === 10 ? this.tab(c, 0, 0, 0, 2, 0, 1, 7, 0, 127, 1, true) :
+      (c >= 11 && c <= 13) ? this.tab(c, 0, 0, 0, 2, 1, 2, 11, 0, 127, 1, false) :
+      (c === 14 || c === 15) ? this.tab(c, 0, 0, 0, 2, 0, 1, 11, 0, 127, 1, false) :
+      this.tab(c, 0, 0, 0, 2, 1, 0, 11, 0, 127, 0, false));
+    return this.defaults[ch & 15];
+  },
+  fixed(t) { return t.ntr === 1 && t.ntt === 0; },
+  interval(i, type, chord) {
+    if (type === "1+8") return i >= 10 ? 12 : 0;
+    const iv = chordIv(type);
+    const has = x => iv.includes(x);
+    const t3 = has(4) ? 4 : has(3) ? 3 : has(5) ? 5 : has(2) ? 2 : -1;
+    const t5 = has(7) ? 7 : has(6) ? 6 : has(8) ? 8 : 7;
+    const t7 = has(11) ? 11 : has(10) ? 10 : (type === "dim7" || type === "dim9") ? 9 : -1;
+    const six = has(9);
+    switch (i) {
+      case 0: return 0;
+      case 1: case 2: return chord ? (has(2) ? 2 : 0) : 2;
+      case 3: case 4: return t3 >= 0 ? t3 : 0;
+      case 5: return chord ? (t3 >= 0 ? t3 : 0) : 5;
+      case 6: case 7: case 8: return t5;
+      case 9: return (six || !chord) ? 9 : t5;
+      default: return t7 >= 0 ? t7 : six ? 9 : chord ? 12 : t3 === 3 ? 10 : 11;
+    }
+  },
+  map(note, t, c, transpose) {
+    if (this.fixed(t)) return note;
+    const r = fm(c.root + transpose, 12);
+    const yt = yamType(c.type);
+    if (t.chordMute !== 0 && Math.floor(t.chordMute / Math.pow(2, yt)) % 2 === 0) return -1;
+    if (t.noteMute !== 0 && ((t.noteMute >> c.root) & 1) === 0) return -1;
+    const chordMode = t.ntt === 2 || t.ntr === 2;
+    const rel = fm(note - t.srcRoot, 12);
+    let j = (t.ntt === 0 && t.ntr !== 2) ? rel : this.interval(rel, c.type, chordMode);
+    if (t.bass && c.bass >= 0 && c.bass !== c.root && rel === 0) j = fm(c.bass - c.root, 12);
+    let n;
+    if (t.ntr === 0) {
+      let delta = fm(r - t.srcRoot, 12);
+      if (r > t.highKey) delta -= 12;
+      n = note + delta + (j - rel);
+    } else {
+      const pc = fm(r + j, 12);
+      let d = fm(pc - note, 12);
+      if (d > 6) d -= 12;
+      n = note + d;
+    }
+    if (c.inv > 0 && chordMode && !t.bass) {     // inversión real: las notas del acorde que van antes suben una octava
+      const ivs = chordIv(c.type).map(x => fm(x, 12));
+      if (c.inv < ivs.length) {
+        const pcRel = fm(n - r, 12);
+        if (ivs.slice(0, c.inv).includes(pcRel) && !ivs.slice(c.inv).includes(pcRel)) n += 12;
+      }
+    }
+    if (t.high - t.low >= 11) {
+      if (n > t.high) n -= Math.floor((n - t.high + 11) / 12) * 12;
+      if (n < t.low) n += Math.floor((t.low - n + 11) / 12) * 12;
+    }
+    return Math.max(0, Math.min(127, n));
+  }
+};
+const GROUPS_CH = { ALL: [...Array(16).keys()], DRUM: [8, 9], ACCOMP: [11, 12, 13, 14, 15], BASS: [10], PIANO: [11], GUITAR: [12], STRINGS: [13], MELODY: [0], OTHER: [14, 15] };
+
+// ===== Motor de audio (AudioWorklet): SoundFont, efectos, CASM y secuenciador con reloj de muestras =====
+const SR = sampleRate;
+const INV16 = 1 / 32768;
+const UNSET = -0x7fffffff;
+const GEN_DEF = new Int32Array(61);
+GEN_DEF[8] = 13500;
+for (const i of [21, 23, 25, 26, 27, 28, 30, 33, 34, 35, 36, 38]) GEN_DEF[i] = -12000;
+GEN_DEF[46] = -1; GEN_DEF[47] = -1; GEN_DEF[56] = 100; GEN_DEF[58] = -1;
+const NONADD = new Uint8Array(61);
+for (const i of [0, 1, 2, 3, 4, 12, 41, 43, 44, 45, 46, 47, 50, 53, 54, 57, 58]) NONADD[i] = 1;
+const sc = (index, cc, dir, polar, type) => index | (cc << 7) | (dir << 8) | (polar << 9) | (type << 10);
+const mkMod = (src, dest, amount, amtSrc, trans) => ({ src, dest, amount, amtSrc, trans });
+const sameMod = (a, b) => a.src === b.src && a.dest === b.dest && a.amtSrc === b.amtSrc && a.trans === b.trans;
+const DEFAULT_MODS = [
+  mkMod(sc(2, 0, 1, 0, 1), 48, 960, 0, 0), mkMod(sc(2, 0, 1, 0, 0), 8, -2400, 0, 0),
+  mkMod(sc(13, 0, 0, 0, 0), 6, 50, 0, 0), mkMod(sc(1, 1, 0, 0, 0), 6, 50, 0, 0),
+  mkMod(sc(7, 1, 1, 0, 1), 48, 960, 0, 0), mkMod(sc(10, 1, 0, 1, 0), 17, 1000, 0, 0),
+  mkMod(sc(11, 1, 1, 0, 1), 48, 960, 0, 0), mkMod(sc(91, 1, 0, 0, 0), 16, 200, 0, 0),
+  mkMod(sc(93, 1, 0, 0, 0), 15, 200, 0, 0)];
+
+class Sf2 {
+  constructor(buf) {
+    const d = new DataView(buf);
+    const tag = p => String.fromCharCode(d.getUint8(p), d.getUint8(p + 1), d.getUint8(p + 2), d.getUint8(p + 3));
+    if (buf.byteLength < 12 || tag(0) !== "RIFF" || tag(8) !== "sfbk") throw new Error("No es un SoundFont");
+    this.smp = new Int16Array(0); this.samples = []; this.insts = []; this.presets = new Map(); this.cache = new Map();
+    const chunks = {};
+    let pos = 12;
+    while (pos + 8 <= buf.byteLength) {
+      const id = tag(pos), sz = d.getInt32(pos + 4, true);
+      if (sz < 0) break;
+      if (id === "LIST" && pos + 12 <= buf.byteLength) {
+        const type = tag(pos + 8);
+        let q = pos + 12;
+        const end = Math.min(buf.byteLength, pos + 8 + sz);
+        while (q + 8 <= end) {
+          const sid = tag(q), ssz = d.getInt32(q + 4, true);
+          if (ssz < 0) break;
+          if (type === "sdta" && sid === "smpl") {
+            const cnt = Math.floor(Math.min(ssz, buf.byteLength - (q + 8)) / 2);
+            this.smp = ((q + 8) % 2 === 0) ? new Int16Array(buf, q + 8, cnt) : new Int16Array(buf.slice(q + 8, q + 8 + cnt * 2));
+          } else if (type === "pdta") chunks[sid] = [q + 8, ssz];
+          q += 8 + ssz + (ssz & 1);
+        }
+      }
+      pos += 8 + sz + (sz & 1);
+    }
+    this.build(d, chunks);
+  }
+  build(b, c) {
+    const u16 = p => b.getUint16(p, true), s16 = p => b.getInt16(p, true);
+    const cnt = (id, rec) => Math.floor((c[id] ? c[id][1] : 0) / rec);
+    const off = id => c[id] ? c[id][0] : 0;
+    const nsh = cnt("shdr", 46) - 1;
+    for (let i = 0; i < nsh; i++) {
+      const p = off("shdr") + i * 46;
+      this.samples.push({ start: b.getInt32(p + 20, true), end: b.getInt32(p + 24, true), sl: b.getInt32(p + 28, true), el: b.getInt32(p + 32, true),
+        rate: b.getInt32(p + 36, true), pitch: b.getUint8(p + 40), corr: b.getInt8(p + 41), type: u16(p + 44) });
+    }
+    const readMods = id => { const n = cnt(id, 10), o = off(id); const l = []; for (let i = 0; i < n; i++) { const p = o + i * 10; l.push(mkMod(u16(p), u16(p + 2), s16(p + 4), u16(p + 6), u16(p + 8))); } return l; };
+    const pmods = readMods("pmod"), imods = readMods("imod");
+    const arr = (id, add) => { const n = cnt(id, 4), o = off(id); const a = new Int32Array(n); for (let i = 0; i < n; i++) a[i] = u16(o + i * 4 + add); return a; };
+    const pbG = arr("pbag", 0), pbM = arr("pbag", 2), ibG = arr("ibag", 0), ibM = arr("ibag", 2);
+    const pgO = arr("pgen", 0), pgA = arr("pgen", 2), igO = arr("igen", 0), igA = arr("igen", 2);
+    const makeZones = (from, to, bg, bm, go, ga, mods, term) => {
+      let global = null; const list = [];
+      for (let bag = from; bag < to; bag++) {
+        if (bag + 1 >= bg.length) break;
+        const z = { g: new Int32Array(61).fill(UNSET), keyLo: 0, keyHi: 127, velLo: 0, velHi: 127, target: -1, mods: [] };
+        for (let gi = bg[bag]; gi < Math.min(bg[bag + 1], go.length); gi++) {
+          const op = go[gi], am = ga[gi];
+          if (op === 43) { z.keyLo = am & 255; z.keyHi = (am >> 8) & 255; }
+          else if (op === 44) { z.velLo = am & 255; z.velHi = (am >> 8) & 255; }
+          else if (op === term) z.target = am;
+          else if (op >= 0 && op <= 60) z.g[op] = am >= 32768 ? am - 65536 : am;
+        }
+        for (let mi = bm[bag]; mi < Math.min(bm[bag + 1], mods.length); mi++) z.mods.push(mods[mi]);
+        if (z.target < 0 && bag === from) global = z; else if (z.target >= 0) list.push(z);
+      }
+      return [global, list];
+    };
+    const ninst = cnt("inst", 22) - 1;
+    for (let i = 0; i < ninst; i++) {
+      const p = off("inst") + i * 22;
+      const r = makeZones(u16(p + 20), u16(p + 22 + 20), ibG, ibM, igO, igA, imods, 53);
+      this.insts.push({ global: r[0], zones: r[1] });
+    }
+    const nph = cnt("phdr", 38) - 1;
+    for (let i = 0; i < nph; i++) {
+      const p = off("phdr") + i * 38;
+      const prog = u16(p + 20), bank = u16(p + 22);
+      const r = makeZones(u16(p + 24), u16(p + 38 + 24), pbG, pbM, pgO, pgA, pmods, 41);
+      this.presets.set(bank * 128 + prog, { bank, prog, global: r[0], zones: r[1] });
+    }
+  }
+  findPreset(bank, prog, drum) {
+    const p = this.presets.get(bank * 128 + prog);
+    if (p) return p;
+    if (drum) { const d = this.presets.get(128 * 128); if (d) return d; for (const v of this.presets.values()) if (v.bank === 128) return v; return null; }
+    const q = this.presets.get(prog); if (q) return q;
+    for (const v of this.presets.values()) return v;
+    return null;
+  }
+  zones(bank, prog, key, vel, drum) {
+    const ck = ((bank * 128 + prog) * 128 + key) * 128 + vel + (drum ? 0.5 : 0);
+    const hit = this.cache.get(ck);
+    if (hit) return hit;
+    const p = this.findPreset(bank, prog, drum);
+    const out = [];
+    if (p) for (const pz of p.zones) {
+      if (key < pz.keyLo || key > pz.keyHi || vel < pz.velLo || vel > pz.velHi) continue;
+      const inst = this.insts[pz.target]; if (!inst) continue;
+      for (const iz of inst.zones) {
+        if (key < iz.keyLo || key > iz.keyHi || vel < iz.velLo || vel > iz.velHi) continue;
+        const sm = this.samples[iz.target]; if (!sm) continue;
+        if (sm.type & 0x8000) continue;
+        const g = new Int32Array(61);
+        const ig = inst.global ? inst.global.g : null, pg = p.global ? p.global.g : null;
+        for (let k = 0; k <= 60; k++) {
+          let v = iz.g[k];
+          if (v === UNSET) v = (ig && ig[k] !== UNSET) ? ig[k] : GEN_DEF[k];
+          if (!NONADD[k]) {
+            let pv = pz.g[k];
+            if (pv === UNSET) pv = (pg && pg[k] !== UNSET) ? pg[k] : 0;
+            v += pv;
+          }
+          g[k] = v;
+        }
+        const instMods = [];
+        if (inst.global) instMods.push(...inst.global.mods);
+        instMods.push(...iz.mods);
+        let ml = [];
+        for (const dm of DEFAULT_MODS) if (!instMods.some(m => sameMod(m, dm))) ml.push(dm);
+        for (const m of instMods) { ml = ml.filter(x => !sameMod(x, m)); ml.push(m); }
+        if (p.global) ml.push(...p.global.mods);
+        ml.push(...pz.mods);
+        out.push({ sample: sm, g, mods: ml });
+      }
+    }
+    if (this.cache.size > 6000) this.cache.clear();
+    this.cache.set(ck, out);
+    return out;
+  }
+}
+
+class Chan {
+  constructor() { this.bankMsb = 0; this.bankLsb = 0; this.prog = 0; this.rpnMsb = 127; this.rpnLsb = 127; this.ver = 0; this.cc = new Int32Array(128); this.reset(); }
+  reset() { this.cc.fill(0); this.cc[7] = 100; this.cc[10] = 64; this.cc[11] = 127; this.cc[91] = 40; this.bend = 8192; this.pressure = 0; this.sustain = false; this.bendRange = 2; this.ver++; }
+}
+
+// ---------- Efectos ----------
+class Comb { constructor(n) { this.buf = new Float32Array(n); this.idx = 0; this.store = 0; }
+  proc(x, d1, d2, fb) { const o = this.buf[this.idx]; this.store = o * d2 + this.store * d1; this.buf[this.idx] = x + this.store * fb; if (++this.idx >= this.buf.length) this.idx = 0; return o; } }
+class Allpass { constructor(n) { this.buf = new Float32Array(n); this.idx = 0; }
+  proc(x) { const b = this.buf[this.idx]; const o = -x + b; this.buf[this.idx] = x + b * 0.5; if (++this.idx >= this.buf.length) this.idx = 0; return o; } }
+class Reverb {
+  constructor() {
+    const ct = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], at = [556, 441, 341, 225];
+    this.cl = ct.map(n => new Comb(n)); this.cr = ct.map(n => new Comb(n + 23));
+    this.al = at.map(n => new Allpass(n)); this.ar = at.map(n => new Allpass(n + 23));
+  }
+  process(inp, oL, oR, n, room, damp, width) {
+    const fb = room * 0.28 + 0.7, d1 = damp * 0.4, d2 = 1 - d1, w1 = width / 2 + 0.5, w2 = (1 - width) / 2;
+    for (let i = 0; i < n; i++) {
+      const x = inp[i] * 0.015; let sl = 0, sr = 0;
+      for (let k = 0; k < 8; k++) { sl += this.cl[k].proc(x, d1, d2, fb); sr += this.cr[k].proc(x, d1, d2, fb); }
+      for (let k = 0; k < 4; k++) { sl = this.al[k].proc(sl); sr = this.ar[k].proc(sr); }
+      oL[i] = sl * w1 + sr * w2; oR[i] = sr * w1 + sl * w2;
+    }
+  }
+}
+class Chorus {
+  constructor() { this.buf = new Float32Array(4096); this.w = 0; this.ph = 0; }
+  process(inp, oL, oR, n, rate, depth) {
+    const inc = rate / SR, dep = 2 + depth * 8, buf = this.buf;
+    for (let i = 0; i < n; i++) {
+      buf[this.w] = inp[i]; let l = 0, r = 0;
+      for (let k = 0; k < 3; k++) {
+        let p = this.ph + k / 3; p -= Math.floor(p);
+        const d = (14 + dep * Math.sin(2 * Math.PI * p)) * SR / 1000;
+        let rd = this.w - d; while (rd < 0) rd += 4096;
+        const i0 = rd | 0, f = rd - i0, a = buf[i0 & 4095], b = buf[(i0 + 1) & 4095], y = a + (b - a) * f;
+        if (k === 0) l += y * 0.8; else if (k === 1) { l += y * 0.4; r += y * 0.4; } else r += y * 0.8;
+      }
+      oL[i] = l; oR[i] = r;
+      this.w = (this.w + 1) & 4095; this.ph += inc; if (this.ph >= 1) this.ph -= 1;
+    }
+  }
+}
+class StereoDelay {
+  constructor() { this.n = SR * 2; this.bl = new Float32Array(this.n); this.br = new Float32Array(this.n); this.w = 0; }
+  process(l, r, count, timeS, fb, mix) {
+    const n = this.n, d = Math.max(100, Math.min(n - 1, (timeS * SR) | 0));
+    for (let i = 0; i < count; i++) {
+      let rd = this.w - d; if (rd < 0) rd += n;
+      const dl = this.bl[rd], dr = this.br[rd];
+      this.bl[this.w] = l[i] + dr * fb; this.br[this.w] = r[i] + dl * fb;
+      l[i] += dl * mix; r[i] += dr * mix;
+      if (++this.w >= n) this.w = 0;
+    }
+  }
+}
+class Biquad {
+  constructor() { this.b0 = 1; this.b1 = 0; this.b2 = 0; this.a1 = 0; this.a2 = 0; this.z1 = 0; this.z2 = 0; }
+  proc(x) { const y = this.b0 * x + this.z1; this.z1 = this.b1 * x - this.a1 * y + this.z2; this.z2 = this.b2 * x - this.a2 * y; return y; }
+  norm(b0, b1, b2, a0, a1, a2) { this.b0 = b0 / a0; this.b1 = b1 / a0; this.b2 = b2 / a0; this.a1 = a1 / a0; this.a2 = a2 / a0; }
+  peak(f, q, db) { const a = Math.pow(10, db / 40), w = 2 * Math.PI * f / SR, c = Math.cos(w), al = Math.sin(w) / (2 * q); this.norm(1 + al * a, -2 * c, 1 - al * a, 1 + al / a, -2 * c, 1 - al / a); }
+  lowShelf(f, db) { const a = Math.pow(10, db / 40), w = 2 * Math.PI * f / SR, c = Math.cos(w), s = 2 * Math.sqrt(a) * (Math.sin(w) / 2 * Math.SQRT2);
+    this.norm(a * ((a + 1) - (a - 1) * c + s), 2 * a * ((a - 1) - (a + 1) * c), a * ((a + 1) - (a - 1) * c - s), (a + 1) + (a - 1) * c + s, -2 * ((a - 1) + (a + 1) * c), (a + 1) + (a - 1) * c - s); }
+  highShelf(f, db) { const a = Math.pow(10, db / 40), w = 2 * Math.PI * f / SR, c = Math.cos(w), s = 2 * Math.sqrt(a) * (Math.sin(w) / 2 * Math.SQRT2);
+    this.norm(a * ((a + 1) + (a - 1) * c + s), -2 * a * ((a - 1) + (a + 1) * c), a * ((a + 1) + (a - 1) * c - s), (a + 1) - (a - 1) * c + s, 2 * ((a - 1) - (a + 1) * c), (a + 1) - (a - 1) * c - s); }
+}
+class Eq3 {
+  constructor() { this.bl = [new Biquad(), new Biquad(), new Biquad()]; this.br = [new Biquad(), new Biquad(), new Biquad()]; this.lo = 999; this.mi = 999; this.hi = 999; }
+  process(l, r, n, low, mid, high) {
+    if (low !== this.lo || mid !== this.mi || high !== this.hi) {
+      this.lo = low; this.mi = mid; this.hi = high;
+      for (const b of [this.bl, this.br]) { b[0].lowShelf(120, low); b[1].peak(1000, 0.9, mid); b[2].highShelf(6000, high); }
+    }
+    for (let i = 0; i < n; i++) { let x = l[i], y = r[i]; for (let k = 0; k < 3; k++) { x = this.bl[k].proc(x); y = this.br[k].proc(y); } l[i] = x; r[i] = y; }
+  }
+}
+function softClip(x) {
+  const a = Math.abs(x);
+  if (a <= 0.8) return x;
+  const t = (a - 0.8) / 0.2;
+  const th = t > 3 ? 1 : t * (27 + t * t) / (27 + 9 * t * t);
+  const y = 0.8 + 0.2 * th;
+  return x < 0 ? -y : y;
+}
+const FX_DEF = { master: 1, reverbOn: true, reverbLevel: 0.5, reverbRoom: 0.75, reverbDamp: 0.45, reverbWidth: 1, chorusOn: true, chorusLevel: 0.5, chorusRate: 0.8, chorusDepth: 0.5,
+  delayOn: false, delayMix: 0.25, delayTime: 0.35, delayFeedback: 0.35, eqOn: false, eqLow: 0, eqMid: 0, eqHigh: 0, limiterOn: true, hq: true, maxVoices: 128 };
+
+// ---------- Sinte ----------
+class Synth {
+  constructor() {
+    this.fx = Object.assign({}, FX_DEF); this.sf = null; this.chans = Array.from({ length: 16 }, () => new Chan()); this.voices = [];
+    this.N = 128; this.mixL = new Float32Array(128); this.mixR = new Float32Array(128); this.rev = new Float32Array(128); this.cho = new Float32Array(128);
+    this.tmpL = new Float32Array(128); this.tmpR = new Float32Array(128);
+    this.reverb = new Reverb(); this.chorus = new Chorus(); this.delay = new StereoDelay(); this.eq = new Eq3();
+  }
+  handle(s, a, b) {
+    if (s === 0xFF) { this.voices.length = 0; return; }
+    const chn = s & 15, c = this.chans[chn];
+    switch (s & 0xF0) {
+      case 0x90: if (b > 0) this.noteOn(chn, a, b); else this.noteOff(chn, a); break;
+      case 0x80: this.noteOff(chn, a); break;
+      case 0xB0: this.cc(chn, a, b); break;
+      case 0xC0: c.prog = a; break;
+      case 0xD0: c.pressure = a; c.ver++; break;
+      case 0xE0: c.bend = (b << 7) | a; c.ver++; break;
+    }
+  }
+  cc(chn, n, v) {
+    const c = this.chans[chn];
+    switch (n) {
+      case 0: c.bankMsb = v; break;
+      case 32: c.bankLsb = v; break;
+      case 64: c.sustain = v >= 64; if (!c.sustain) for (const x of this.voices) if (x.ch === chn && x.sustained) { x.sustained = false; this.release(x); } break;
+      case 98: case 99: c.rpnMsb = 127; c.rpnLsb = 127; break;
+      case 100: c.rpnLsb = v; break;
+      case 101: c.rpnMsb = v; break;
+      case 6: if (c.rpnMsb === 0 && c.rpnLsb === 0) c.bendRange = v; break;
+      case 120: for (const x of this.voices) if (x.ch === chn) this.fastRelease(x); break;
+      case 121: c.reset(); return;
+      case 123: for (const x of this.voices) if (x.ch === chn && !x.releasing) this.release(x); break;
+    }
+    c.cc[n] = v; c.ver++;
+  }
+  isDrum(chn) { const c = this.chans[chn]; return chn === 9 || c.bankMsb === 127 || c.bankMsb === 120; }
+  noteOn(chn, key, vel) {
+    const f = this.sf; if (!f) return;
+    const c = this.chans[chn], drum = this.isDrum(chn);
+    const zs = f.zones(drum ? 128 : c.bankMsb, c.prog, key, vel, drum);
+    const exs = [];
+    for (const z of zs) if (z.g[57] !== 0) exs.push(z.g[57]);
+    if (exs.length) for (const x of this.voices) if (x.ch === chn && exs.includes(x.excl) && !x.releasing) this.fastRelease(x);
+    for (const z of zs) {
+      const v = this.makeVoice(f, chn, key, vel, z); if (!v) continue;
+      if (this.voices.length >= this.fx.maxVoices) this.stealOne();
+      this.voices.push(v);
+    }
+  }
+  makeVoice(f, chn, key, vel, z) {
+    const s = z.sample, g = z.g, sz = f.smp.length;
+    if (sz < 4) return null;
+    const cl = (x, lo, hi) => x < lo ? lo : x > hi ? hi : x;
+    const st = cl(s.start + g[0] + g[4] * 32768, 0, sz - 2);
+    const en = cl(s.end + g[1] + g[12] * 32768, st + 1, sz - 1);
+    const ls = cl(s.sl + g[2] + g[45] * 32768, st, en);
+    const le = cl(s.el + g[3] + g[50] * 32768, ls, en);
+    const tcs = tc => Math.max(0.001, Math.pow(2, tc / 1200));
+    const mode = g[54] & 3;
+    const keyP = g[46] >= 0 ? g[46] : key;
+    const root = g[58] >= 0 ? g[58] : (s.pitch >= 0 && s.pitch <= 127 ? s.pitch : 60);
+    return {
+      ch: chn, key, vel, g, mods: z.mods, mt: new Float64Array(61), chVer: -1,
+      loopMode: ((mode === 1 || mode === 3) && le - ls >= 8) ? mode : 0, pos: st, end: en, ls, le,
+      baseCents: g[51] * 100 + g[52] + s.corr + (keyP - root) * g[56], rate: (s.rate > 0 ? s.rate : SR) / SR,
+      phase: 0, t: 0, dbAtt: 0, amp: 0,
+      vDelay: tcs(g[33]), vAttack: tcs(g[34]), vHold: tcs(g[35] + (60 - key) * g[39]), vDecay: tcs(g[36] + (60 - key) * g[40]),
+      vSusDb: Math.max(0, Math.min(144, g[37] / 10)), vRelease: tcs(g[38]),
+      mph: 0, mtime: 0, me: 0, meRel: 0,
+      mDelay: tcs(g[25]), mAttack: tcs(g[26]), mHold: tcs(g[27] + (60 - key) * g[31]), mDecay: tcs(g[28] + (60 - key) * g[32]),
+      mSus: Math.max(0, 1 - g[29] / 1000), mRelease: tcs(g[30]),
+      lt: 0, lpM: 0, lpV: 0, lfoM: 0, lfoV: 0,
+      mlDelay: tcs(g[21]), mlFreq: 8.176 * Math.pow(2, g[22] / 1200), vlDelay: tcs(g[23]), vlFreq: 8.176 * Math.pow(2, g[24] / 1200),
+      gl: 0, gr: 0, first: true, ic1: 0, ic2: 0, releasing: false, sustained: false, done: false, excl: g[57]
+    };
+  }
+  noteOff(chn, key) {
+    const c = this.chans[chn], drum = this.isDrum(chn);
+    for (const v of this.voices) {
+      if (v.ch !== chn || v.key !== key || v.releasing || v.sustained) continue;
+      if (drum && v.loopMode === 0) continue;
+      if (c.sustain) v.sustained = true; else this.release(v);
+    }
+  }
+  release(v) {
+    if (v.releasing) return;
+    v.releasing = true;
+    if (v.phase === 0 || v.amp <= 1e-5) { v.done = true; return; }
+    if (v.phase === 1 || v.phase === 2) v.dbAtt = -20 * Math.log10(Math.max(v.amp, 1e-5));
+    else if (v.phase === 4) v.dbAtt = v.vSusDb;
+    v.phase = 5; v.mph = 5; v.mtime = 0; v.meRel = v.me;
+  }
+  fastRelease(v) { v.vRelease = Math.min(v.vRelease, 0.03); v.mRelease = Math.min(v.mRelease, 0.03); this.release(v); }
+  stealOne() {
+    let best = -1, bs = Infinity;
+    for (let i = 0; i < this.voices.length; i++) { const v = this.voices[i]; const s = v.releasing ? v.amp - 10 : v.amp; if (s < bs) { bs = s; best = i; } }
+    if (best >= 0) this.voices.splice(best, 1);
+  }
+  curve(type, x) {
+    switch (type) {
+      case 1: return x <= 0 ? 0 : x >= 1 ? 1 : Math.min(1, -(40 / 96) * Math.log10(1 - x));
+      case 2: return x <= 0 ? 0 : x >= 1 ? 1 : Math.max(0, 1 + (40 / 96) * Math.log10(x));
+      case 3: return x < 0.5 ? 0 : 1;
+      default: return x;
+    }
+  }
+  srcValue(raw, v, c) {
+    if (raw === 0) return 1;
+    const index = raw & 127, isCc = (raw >> 7) & 1, dir = (raw >> 8) & 1, polar = (raw >> 9) & 1, type = (raw >> 10) & 63;
+    let x;
+    if (isCc) x = c.cc[index] / 127;
+    else switch (index) { case 2: x = v.vel / 127; break; case 3: x = v.key / 127; break; case 13: x = c.pressure / 127; break; case 14: x = c.bend / 16384; break; case 16: x = c.bendRange / 127; break; default: x = 0; }
+    if (dir) x = 1 - x;
+    let y = this.curve(type, x);
+    if (polar) y = 2 * y - 1;
+    return y;
+  }
+  evalMods(v, c) {
+    v.mt.fill(0);
+    for (const m of v.mods) {
+      if (m.dest >= 61) continue;
+      let s = this.srcValue(m.src, v, c);
+      if (m.amtSrc !== 0) s *= this.srcValue(m.amtSrc, v, c);
+      let r = s * m.amount;
+      if (m.trans === 2) r = Math.abs(r);
+      v.mt[m.dest] += r;
+    }
+  }
+  stepVol(v, dt) {
+    switch (v.phase) {
+      case 0: v.amp = 0; v.t += dt; if (v.t >= v.vDelay) { v.phase = 1; v.t = 0; } break;
+      case 1: v.t += dt; v.amp = v.vAttack <= 0.0015 ? 1 : Math.min(1, v.t / v.vAttack); if (v.amp >= 1) { v.phase = 2; v.t = 0; } break;
+      case 2: v.amp = 1; v.t += dt; if (v.t >= v.vHold) { v.phase = 3; v.dbAtt = 0; } break;
+      case 3: v.dbAtt += 100 * dt / v.vDecay; if (v.dbAtt >= v.vSusDb) { v.dbAtt = v.vSusDb; v.phase = 4; } v.amp = Math.pow(10, -v.dbAtt / 20); break;
+      case 4: v.amp = Math.pow(10, -v.vSusDb / 20); break;
+      case 5: v.dbAtt += 100 * dt / v.vRelease; v.amp = Math.pow(10, -v.dbAtt / 20); break;
+    }
+    if (v.phase === 5 && v.dbAtt >= 96) v.done = true;
+    else if ((v.phase === 3 || v.phase === 4) && v.vSusDb >= 96 && v.dbAtt >= 96) v.done = true;
+  }
+  stepMod(v, dt) {
+    switch (v.mph) {
+      case 0: v.me = 0; v.mtime += dt; if (v.mtime >= v.mDelay) { v.mph = 1; v.mtime = 0; } break;
+      case 1: v.mtime += dt; v.me = v.mAttack <= 0.0015 ? 1 : Math.min(1, v.mtime / v.mAttack); if (v.me >= 1) { v.mph = 2; v.mtime = 0; } break;
+      case 2: v.me = 1; v.mtime += dt; if (v.mtime >= v.mHold) { v.mph = 3; v.mtime = 0; } break;
+      case 3: v.me -= dt / v.mDecay; if (v.me <= v.mSus) { v.me = v.mSus; v.mph = 4; } break;
+      case 4: v.me = v.mSus; break;
+      case 5: v.mtime += dt; v.me = Math.max(0, v.meRel * (1 - v.mtime / v.mRelease)); break;
+    }
+  }
+  stepLfo(v, dt) {
+    const tri = p => p < 0.25 ? 4 * p : p < 0.75 ? 2 - 4 * p : 4 * p - 4;
+    v.lt += dt;
+    if (v.lt >= v.mlDelay) { v.lpM += dt * v.mlFreq; if (v.lpM >= 1) v.lpM -= Math.floor(v.lpM); v.lfoM = tri(v.lpM); } else v.lfoM = 0;
+    if (v.lt >= v.vlDelay) { v.lpV += dt * v.vlFreq; if (v.lpV >= 1) v.lpV -= Math.floor(v.lpV); v.lfoV = tri(v.lpV); } else v.lfoV = 0;
+  }
+  /** Mezcla "n" muestras (múltiplo de 32) a partir de "o" en los búferes de mezcla. */
+  render(o, n) {
+    const f = this.sf;
+    if (f) {
+      const hq = this.fx.hq;
+      let w = 0;
+      for (let i = 0; i < this.voices.length; i++) {
+        const v = this.voices[i];
+        this.renderVoice(v, f.smp, hq, o, n);
+        if (!v.done) this.voices[w++] = v;
+      }
+      this.voices.length = w;
+    }
+  }
+  finish() {
+    const N = this.N, fp = this.fx, mixL = this.mixL, mixR = this.mixR;
+    if (fp.reverbOn) {
+      this.reverb.process(this.rev, this.tmpL, this.tmpR, N, fp.reverbRoom, fp.reverbDamp, fp.reverbWidth);
+      const lv = fp.reverbLevel * 3;
+      for (let i = 0; i < N; i++) { mixL[i] += this.tmpL[i] * lv; mixR[i] += this.tmpR[i] * lv; }
+    }
+    if (fp.chorusOn) {
+      this.chorus.process(this.cho, this.tmpL, this.tmpR, N, fp.chorusRate, fp.chorusDepth);
+      const lv = fp.chorusLevel;
+      for (let i = 0; i < N; i++) { mixL[i] += this.tmpL[i] * lv; mixR[i] += this.tmpR[i] * lv; }
+    }
+    if (fp.eqOn) this.eq.process(mixL, mixR, N, fp.eqLow, fp.eqMid, fp.eqHigh);
+    if (fp.delayOn) this.delay.process(mixL, mixR, N, fp.delayTime, fp.delayFeedback, fp.delayMix);
+    const mg = fp.master * 0.9, lim = fp.limiterOn;
+    for (let i = 0; i < N; i++) {
+      let l = mixL[i] * mg, r = mixR[i] * mg;
+      if (lim) { l = softClip(l); r = softClip(r); }
+      mixL[i] = l < -1 ? -1 : l > 1 ? 1 : l; mixR[i] = r < -1 ? -1 : r > 1 ? 1 : r;
+    }
+  }
+  renderVoice(v, smp, hq, o, N) {
+    const c = this.chans[v.ch], sz = smp.length, mixL = this.mixL, mixR = this.mixR, rev = this.rev, cho = this.cho;
+    let off = 0;
+    while (off < N && !v.done) {
+      const len = Math.min(32, N - off), dt = len / SR;
+      if (v.chVer !== c.ver) { this.evalMods(v, c); v.chVer = c.ver; }
+      this.stepVol(v, dt); this.stepMod(v, dt); this.stepLfo(v, dt);
+      if (v.done) break;
+      const g = v.g, mt = v.mt;
+      const bend = ((c.bend - 8192) / 8192) * c.bendRange * 100;
+      const cents = v.baseCents + bend + mt[51] * 100 + mt[52] + v.lfoM * (g[5] + mt[5]) + v.lfoV * (g[6] + mt[6]) + v.me * (g[7] + mt[7]);
+      const step = v.rate * Math.pow(2, cents / 1200);
+      const fcCents = g[8] + mt[8] + v.lfoM * (g[10] + mt[10]) + v.me * (g[11] + mt[11]);
+      const qdb = Math.max(0, Math.min(96, (g[9] + mt[9]) / 10));
+      const att = Math.max(0, Math.min(1440, g[48] + mt[48] + v.lfoM * (g[13] + mt[13])));
+      const amp = v.amp * Math.pow(10, -att / 200);
+      const pan = Math.max(0, Math.min(1, (g[17] + mt[17]) / 1000 + 0.5));
+      const ang = pan * Math.PI / 2;
+      const tgtL = amp * Math.cos(ang) * INV16, tgtR = amp * Math.sin(ang) * INV16;
+      const rs = Math.max(0, Math.min(1, (g[16] + mt[16]) / 1000)), cs = Math.max(0, Math.min(1, (g[15] + mt[15]) / 1000));
+      const fcHz = 8.176 * Math.pow(2, fcCents / 1200);
+      const useF = hq && fcHz < 18000;
+      let fa1 = 0, fa2 = 0, fa3 = 0;
+      if (useF) {
+        const fc = Math.max(20, Math.min(19000, fcHz, SR * 0.45));
+        const gg = Math.tan(Math.PI * fc / SR), kk = 1 / (0.7071 * Math.pow(10, qdb / 20)), a1 = 1 / (1 + gg * (gg + kk));
+        fa1 = a1; fa2 = gg * a1; fa3 = gg * gg * a1;
+      }
+      if (v.first) { v.gl = tgtL; v.gr = tgtR; v.first = false; }
+      let pos = v.pos, gl = v.gl, gr = v.gr, ic1 = v.ic1, ic2 = v.ic2;
+      const dL = (tgtL - gl) / len, dR = (tgtR - gr) / len;
+      const loopOn = v.loopMode === 1 || (v.loopMode === 3 && !v.releasing);
+      const endP = v.end, ls = v.ls, le = v.le, ll = le - ls;
+      for (let n = 0; n < len; n++) {
+        if (pos >= endP) { v.done = true; break; }
+        const ip = pos | 0, fr = pos - ip;
+        let x;
+        if (hq && ip >= 1 && ip + 2 < sz) {
+          const y0 = smp[ip - 1], y1 = smp[ip], y2 = smp[ip + 1], y3 = smp[ip + 2];
+          const c1 = 0.5 * (y2 - y0), c2 = y0 - 2.5 * y1 + 2 * y2 - 0.5 * y3, c3 = 0.5 * (y3 - y0) + 1.5 * (y1 - y2);
+          x = ((c3 * fr + c2) * fr + c1) * fr + y1;
+        } else {
+          const s0 = smp[ip < sz ? ip : sz - 1], s1 = smp[ip + 1 < sz ? ip + 1 : sz - 1];
+          x = s0 + (s1 - s0) * fr;
+        }
+        if (useF) {
+          const v3 = x - ic2, v1 = fa1 * ic1 + fa2 * v3, v2 = ic2 + fa2 * ic1 + fa3 * v3;
+          ic1 = 2 * v1 - ic1; ic2 = 2 * v2 - ic2; x = v2;
+        }
+        gl += dL; gr += dR;
+        const idx = o + off + n;
+        mixL[idx] += x * gl; mixR[idx] += x * gr;
+        if (rs > 0) rev[idx] += x * (gl + gr) * 0.5 * rs;
+        if (cs > 0) cho[idx] += x * (gl + gr) * 0.5 * cs;
+        pos += step;
+        if (loopOn) while (pos >= le) pos -= ll;
+      }
+      v.pos = pos; v.gl = gl; v.gr = gr; v.ic1 = ic1; v.ic2 = ic2;
+      off += len;
+    }
+  }
+}
+
+// ---------- Secuenciador (reloj de muestras) ----------
+class Seq {
+  constructor(p) {
+    this.p = p; this.bpm = 120; this.running = false; this.current = ""; this.lastMain = ""; this.chord = mkChord(0, "maj");
+    this.transpose = 0; this.quant = 1; this.fillQuant = 1; this.auto = false; this.autoSteps = []; this.autoIdx = 0; this.autoBeats = 0;
+    this.autoEnd = 0; this.autoFrozen = false; this.paused = false; this.pauseReq = false; this.queue = []; this.style = null;
+    this.pending = null; this.beatInBar = 0; this.lastBeatTick = 0;
+    this.sent = Array.from({ length: 16 }, () => new Int16Array(128).fill(-1));
+    this.vel = Array.from({ length: 16 }, () => new Uint8Array(128));
+    this.tabs = new Array(16).fill(null); this.styleVol = new Int32Array(16).fill(100);
+    this.muted = new Set(); this.gain = {}; for (const k in GROUPS_CH) this.gain[k] = 1;
+    this.breakReq = false; this.silentTo = -1; this.curTick = 0; this.startOff = 0; this.sec = null;
+    this.metro = false; this.countLeft = 0; this.countNext = 0; this.countName = null; this.metroPh = 0; this.metroBeat = 0;
+  }
+  out(s, a, b) { this.p.emit(s, a, b); }
+  isMuted(ch) { for (const g of this.muted) if (GROUPS_CH[g] && GROUPS_CH[g].includes(ch)) return true; return false; }
+  toggleMute(g) {
+    if (this.muted.has(g)) this.muted.delete(g); else { this.muted.add(g); (GROUPS_CH[g] || []).forEach(c => this.out(0xB0 | c, 123, 0)); }
+  }
+  eff(ch) { let g = this.gain.ALL; for (const k in GROUPS_CH) if (k !== "ALL" && GROUPS_CH[k].includes(ch)) g *= this.gain[k]; return g; }
+  sendVol(ch) { this.out(0xB0 | ch, 7, Math.max(0, Math.min(127, (this.styleVol[ch] * this.eff(ch)) | 0))); }
+  setGain(n, v) { this.gain[n] = Math.max(0, Math.min(1.5, v)); (GROUPS_CH[n] || []).forEach(c => this.sendVol(c)); }
+  tab(ch) { return this.tabs[ch] || Casm.def(ch); }
+  requestChord(c) {
+    if (!this.running) { this.chord = c; this.p.status(true); return; }
+    const q = this.quant;
+    if (q === 0) { this.pending = { c, mode: 0 }; return; }
+    const st = this.style;
+    const el = Math.max(0, Math.min(1, (this.curTick - this.lastBeatTick) / st.ppq));
+    if (q === 1) this.pending = el <= 0.30 ? { c, mode: 0 } : { c, mode: 1 };
+    else this.pending = (this.beatInBar + el) / 4 <= 0.20 ? { c, mode: 0 } : { c, mode: 2 };
+  }
+  autoJump(j) { this.autoIdx = j; this.autoBeats = 1; this.autoFrozen = false; }
+  syncStop() { if (!this.running) return; if (this.paused) this.paused = false; else this.pauseReq = true; }
+  applyChord(c, manual) { if (manual && this.paused) this.paused = false; this.chord = c; this.retrigger(); this.p.status(true); }
+  allOff(from, to) { for (let c = from; c <= to; c++) { this.out(0xB0 | c, 123, 0); this.sent[c].fill(-1); } }
+  hardOff(from, to) { for (let c = from; c <= to; c++) { this.out(0xB0 | c, 64, 0); this.out(0xB0 | c, 123, 0); this.out(0xB0 | c, 120, 0); this.sent[c].fill(-1); } }
+  start(name, countIn) {
+    this.stop(); if (!this.style) return;
+    if (countIn) { this.countLeft = 5; this.countNext = 0; this.countName = name; return; }
+    this.begin(name);
+  }
+  begin(name) {
+    const st = this.style;
+    this.current = name; this.running = true; this.pending = null; this.autoFrozen = false; this.paused = false; this.pauseReq = false;
+    if (this.auto && this.autoSteps.length) {
+      this.autoIdx = Math.max(0, Math.min(this.autoSteps.length - 1, this.autoIdx)); this.autoBeats = 0;
+      this.chord = this.autoSteps[this.autoIdx].c;
+    }
+    this.allOff(0, 15);
+    let first = Infinity; for (const k in st.sections) first = Math.min(first, st.sections[k][0]); if (first === Infinity) first = 0;
+    const E = st.ev;
+    for (let i = 0; i < E.n; i++) {
+      if (E.tick[i] >= first) break;
+      const k = E.st[i] & 0xF0;
+      if (k !== 0x90 && k !== 0x80) this.send(i);
+    }
+    for (let c = 0; c < 16; c++) this.sendVol(c);
+    this.startOff = 0;
+    this.enter(name);
+    this.p.post({ t: "started" });
+    this.p.status(true);
+  }
+  stop() { if (this.running) { this.running = false; this.allOff(0, 15); } this.paused = false; this.pauseReq = false; this.countLeft = 0; this.sec = null; this.current = ""; this.p.status(true); }
+  lowerBound(t) { const T = this.style.ev.tick; let lo = 0, hi = this.style.ev.n; while (lo < hi) { const m = (lo + hi) >> 1; if (T[m] < t) lo = m + 1; else hi = m; } return lo; }
+  enter(sec) {
+    const st = this.style, r = st.sections[sec];
+    if (!r) { this.finish(); return; }
+    this.current = sec; this.sec = sec;
+    this.tabs = (st.casm && st.casm[sec]) || new Array(16).fill(null);
+    if (sec.startsWith("Main")) this.lastMain = sec;
+    this.r0 = r[0]; this.r1 = r[1];
+    this.i = this.lowerBound(r[0]); this.iEnd = this.lowerBound(r[1]);
+    const ppq = st.ppq, bar = 4 * ppq;
+    const off = Math.max(0, Math.min(Math.max(0, r[1] - r[0] - 1), this.startOff)); this.startOff = 0;
+    this.tick = r[0] + off;
+    const E = st.ev;
+    while (this.i < this.iEnd && E.tick[this.i] < this.tick) { const k = E.st[this.i] & 0xF0; if (k !== 0x90 && k !== 0x80) this.send(this.i); this.i++; }
+    const beatsIn = Math.ceil(off / ppq - 1e-6);
+    this.nextBar = r[0] + bar * (1 + Math.floor(off / bar)); this.nextBeat = r[0] + beatsIn * ppq; this.beat = beatsIn;
+    this.jumpOff = -1; this.silentTo = -1;
+    this.p.status(true);
+  }
+  finish() {
+    this.running = false; this.allOff(0, 15); this.sec = null; this.current = ""; this.p.status(true);
+  }
+  fillQueued() { return this.queue.length > 0 && this.queue[0].toLowerCase().startsWith("fill"); }
+  leave() {
+    const st = this.style;
+    this.allOff(8, 15);
+    const p = this.queue.shift();
+    if (this.jumpOff > 0 && p && p.toLowerCase().startsWith("fill")) this.startOff = this.jumpOff;
+    let next;
+    const sec = this.sec;
+    if (p && st.sections[p]) next = p;
+    else if (sec.startsWith("Main")) next = sec;
+    else if (sec.startsWith("Ending") || sec.startsWith("SEnd")) next = null;
+    else if (this.lastMain) next = this.lastMain;
+    else next = Object.keys(st.sections).find(k => k.startsWith("Main")) || null;
+    if (!next) this.finish(); else this.enter(next);
+  }
+  autoStep(manualApplied) {
+    if (!this.auto || this.autoFrozen) return;
+    const steps = this.autoSteps; if (!steps.length) return;
+    let idx = Math.max(0, Math.min(steps.length - 1, this.autoIdx));
+    if (this.autoBeats >= steps[idx].b) {
+      this.autoBeats = 0; idx++;
+      if (idx >= steps.length) {
+        idx = 0;
+        if (this.autoEnd === 1) { this.autoIdx = 0; this.stop(); this.p.kill(); return; }
+        if (this.autoEnd === 2) {
+          const e = Object.keys(this.style.sections).find(k => k.toLowerCase().startsWith("ending"));
+          if (e) this.queue.push(e);
+          this.autoFrozen = true;
+        }
+      }
+      this.autoIdx = idx;
+      if (!manualApplied && !this.autoFrozen) this.applyChord(steps[idx].c, false);
+    }
+    this.autoBeats++;
+  }
+  click(accent) { this.p.click(accent); }
+  /** Avanza "frames" muestras. */
+  step(frames) {
+    if (this.countLeft > 0) {                    // cuenta previa: 4 clics y luego arranca
+      this.countNext -= frames;
+      if (this.countNext <= 0) {
+        if (this.countLeft > 1) { this.click(this.countLeft === 5); this.countLeft--; this.countNext += SR * 60 / this.bpm; }
+        else { this.countLeft = 0; this.begin(this.countName); }
+      }
+      return;
+    }
+    if (!this.running) {
+      if (this.metro) { this.metroPh -= frames; if (this.metroPh <= 0) { this.click(this.metroBeat % 4 === 0); this.metroBeat++; this.metroPh += Math.max(SR * 0.1, SR * 60 / this.bpm); } }
+      else { this.metroPh = 0; this.metroBeat = 0; }
+      return;
+    }
+    const st = this.style, ppq = st.ppq, bar = 4 * ppq, E = st.ev;
+    this.tick += frames * ppq * this.bpm / 60 / SR; this.curTick = this.tick;
+    const tick = this.tick;
+    if (this.pauseReq) { this.pauseReq = false; this.paused = true; this.hardOff(8, 15); this.p.status(true); }
+    const pn = this.pending;
+    if (pn && pn.mode === 0) { this.pending = null; this.applyChord(pn.c, true); }
+    if (this.retrig) { this.retrig = false; this.retrigger(); }
+    if (tick >= this.nextBeat) {
+      this.lastBeatTick = this.nextBeat; this.beatInBar = this.beat % 4;
+      const pp = this.pending; let applied = false;
+      if (pp && (pp.mode === 1 || (pp.mode === 2 && this.beatInBar === 0))) { this.pending = null; this.applyChord(pp.c, true); applied = true; }
+      this.autoStep(applied);
+      if (!this.running) return;
+      if (this.metro) this.click(this.beatInBar === 0);
+      this.p.beat(this.beatInBar);
+      this.beat++; this.nextBeat += ppq;
+      if (this.fillQuant === 1 && this.fillQueued()) this.jumpOff = ((this.beat - 1) % 4) * ppq;
+    }
+    if (this.fillQuant === 0 && this.fillQueued()) this.jumpOff = fm(Math.floor(tick - this.r0), bar);
+    if (this.jumpOff >= 0) { this.leave(); return; }
+    if (tick >= this.nextBar) {                    // cambios de sección en el siguiente compás
+      if (this.queue.length) { this.leave(); return; }
+      this.nextBar += bar;
+      if (this.breakReq) { this.breakReq = false; this.silentTo = this.nextBar; this.allOff(8, 15); }
+    }
+    while (this.i < this.iEnd && E.tick[this.i] <= tick) { this.send(this.i); this.i++; }
+    if (tick >= this.r1) this.leave();
+  }
+  retrigger() {
+    const c = this.chord, tr = this.transpose;
+    for (let ch = 0; ch < 16; ch++) {
+      const t = this.tab(ch);
+      if (Casm.fixed(t)) continue;
+      const S = this.sent[ch];
+      for (let n = 0; n < 128; n++) {
+        const m = S[n]; if (m < 0) continue;
+        const nm = Casm.map(n, t, c, tr);
+        if (nm === m) continue;
+        this.out(0x80 | ch, m, 0);
+        if (nm >= 0 && t.rtr !== 0) { this.out(0x90 | ch, nm, this.vel[ch][n]); S[n] = nm; } else S[n] = -1;
+      }
+    }
+  }
+  send(i) {
+    const E = this.style.ev, s = E.st[i], a = E.a[i], b = E.b[i];
+    const ch = s & 0x0F, k = s & 0xF0;
+    if (k === 0x90 && b > 0) {
+      const old = this.sent[ch][a];
+      if (old >= 0) this.out(0x80 | ch, old, 0);
+      if (this.curTick < this.silentTo || this.isMuted(ch) || this.paused) { this.sent[ch][a] = -1; return; }
+      const n = Casm.map(a, this.tab(ch), this.chord, this.transpose);
+      this.sent[ch][a] = n; this.vel[ch][a] = b;
+      if (n >= 0) this.out(s, n, b);
+    } else if (k === 0x80 || k === 0x90) {
+      const m = this.sent[ch][a];
+      if (m >= 0) this.out(0x80 | ch, m, 0);
+      this.sent[ch][a] = -1;
+    } else if (k === 0xB0 && a === 7) { this.styleVol[ch] = b; this.sendVol(ch); }
+    else this.out(s, a, b);
+  }
+}
+
+class StyEngine extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.synth = new Synth(); this.seq = new Seq(this); this.fwd = false; this.outQ = []; this.lastStat = 0; this.frames = 0; this.dirty = false;
+    this.port.onmessage = e => this.msg(e.data);
+  }
+  post(m) { this.port.postMessage(m); }
+  emit(s, a, b) {
+    if (this.internal !== false) this.synth.handle(s, a, b);
+    const k = s & 0xF0;
+    if (this.fwd || k === 0xC0 || k === 0xB0) this.outQ.push(s, a, b);
+  }
+  click(accent) { if (this.internal !== false) this.synth.handle(0x99, accent ? 76 : 77, accent ? 127 : 90); this.post({ t: "click", accent }); }
+  kill() { for (let r = 0; r < 2; r++) for (let ch = 0; ch < 16; ch++) { this.emit(0xB0 | ch, 64, 0); this.emit(0xB0 | ch, 123, 0); this.emit(0xB0 | ch, 120, 0); } }
+  beat(b) { this.curBeat = b; this.dirty = true; }
+  status(now) { this.dirty = true; if (now) this.flushStatus(); }
+  flushStatus() {
+    const q = this.seq;
+    this.dirty = false;
+    this.post({ t: "st", running: q.running, current: q.current, lastMain: q.lastMain, chord: q.chord, autoIdx: q.autoIdx, autoBeats: q.autoBeats,
+      paused: q.paused, beat: this.curBeat || 0, bpm: q.bpm, transpose: q.transpose, auto: q.auto, voices: this.synth.voices.length, counting: q.countLeft > 0 });
+  }
+  msg(m) {
+    const q = this.seq;
+    switch (m.t) {
+      case "sf2": try { this.synth.sf = new Sf2(m.buf); this.synth.voices.length = 0; this.post({ t: "sf2ok" }); } catch (e) { this.post({ t: "sf2err", msg: String(e.message || e) }); } break;
+      case "style": q.stop(); q.style = m.style; q.bpm = m.style.bpm; this.status(true); break;
+      case "midi": { const d = m.d; for (let i = 0; i + 2 < d.length; i += 3) this.synth.handle(d[i], d[i + 1], d[i + 2]); break; }
+      case "fx": Object.assign(this.synth.fx, m.fx); break;
+      case "set": for (const k in m.v) { if (k === "autoSteps") q.autoSteps = m.v[k]; else if (k === "fwd") this.fwd = m.v[k]; else if (k === "internal") { this.internal = m.v[k]; if (!this.internal) this.synth.voices.length = 0; } else if (k === "transpose") { q.transpose = m.v[k]; q.retrig = true; } else q[k] = m.v[k]; } this.status(true); break;
+      case "start": q.start(m.name, m.countIn); break;
+      case "stop": q.stop(); this.kill(); break;
+      case "go": if (!q.running) { q.start(m.list[0], false); q.queue = m.list.slice(1); } else q.queue = m.list.slice(); break;
+      case "chord": q.requestChord(m.c); break;
+      case "autoJump": q.autoJump(m.j); break;
+      case "syncStop": q.syncStop(); break;
+      case "break": if (q.running) q.breakReq = true; break;
+      case "mute": q.toggleMute(m.g); break;
+      case "gain": q.setGain(m.g, m.v); break;
+      case "panic": q.stop(); this.synth.voices.length = 0; this.kill(); break;
+      case "hush": this.synth.voices.length = 0; break;
+    }
+  }
+  process(inputs, outputs) {
+    const out = outputs[0], L = out[0], R = out[1] || out[0], N = L.length;
+    const s = this.synth;
+    if (s.N !== N) { s.N = N; for (const k of ["mixL", "mixR", "rev", "cho", "tmpL", "tmpR"]) s[k] = new Float32Array(N); }
+    s.mixL.fill(0); s.mixR.fill(0); s.rev.fill(0); s.cho.fill(0);
+    for (let o = 0; o < N; o += 32) {
+      const n = Math.min(32, N - o);
+      this.seq.step(n);
+      s.render(o, n);
+    }
+    s.finish();
+    L.set(s.mixL); if (R !== L) R.set(s.mixR);
+    if (this.outQ.length) { this.post({ t: "ev", d: this.outQ, at: currentTime }); this.outQ = []; }
+    this.frames += N;
+    if (this.dirty || this.frames - this.lastStat > SR / 4) { this.lastStat = this.frames; this.flushStatus(); }
+    return true;
+  }
+}
+registerProcessor("sty-engine", StyEngine);
+</script>
+<script type="text/plain" id="sf2-b64"></script>
+<script>
+// ===== Común: acordes, CASM (lo usan el motor de audio y la interfaz) =====
+const NN = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const fm = (a, b) => ((a % b) + b) % b;
+const CHORDS_L = [
+  ["maj", [0, 4, 7]], ["m", [0, 3, 7]], ["7", [0, 4, 7, 10]], ["m7", [0, 3, 7, 10]],
+  ["maj7", [0, 4, 7, 11]], ["6", [0, 4, 7, 9]], ["m6", [0, 3, 7, 9]], ["sus4", [0, 5, 7]],
+  ["sus2", [0, 2, 7]], ["7sus4", [0, 5, 7, 10]], ["dim", [0, 3, 6]], ["dim7", [0, 3, 6, 9]],
+  ["m7b5", [0, 3, 6, 10]], ["aug", [0, 4, 8]], ["add9", [0, 2, 4, 7]], ["9", [0, 4, 7, 10, 2]], ["m9", [0, 3, 7, 10, 2]],
+  ["maj9", [0, 4, 7, 11, 2]], ["dim9", [0, 3, 6, 9, 2]], ["11", [0, 4, 7, 10, 2, 5]],
+  ["13", [0, 4, 7, 10, 2, 9]], ["7b9", [0, 4, 7, 10, 1]], ["7#9", [0, 4, 7, 10, 3]],
+  ["7#5", [0, 4, 8, 10]], ["7b5", [0, 4, 6, 10]], ["mMaj7", [0, 3, 7, 11]],
+  ["69", [0, 4, 7, 9, 2]], ["madd9", [0, 3, 7, 2]], ["add11", [0, 4, 7, 5]],
+  ["1+5", [0, 7]], ["1+8", [0]]];
+const CHORDS = new Map(CHORDS_L);
+const YAM_TYPE = { maj: 0, "6": 1, maj7: 2, add9: 4, aug: 7, m: 8, m6: 9, m7: 10, m7b5: 11, dim: 17, dim7: 18, "7": 19, "7sus4": 20, "1+8": 30, "1+5": 31, sus4: 32, sus2: 33 };
+const SUP = ["", "¹", "²", "³", "⁴", "⁵", "⁶"];
+const SLASH = 100;
+
+function isCustomType(t) { return t.length > 1 && t[0] === "x" && t.substring(1).split("-").every(s => s !== "" && !isNaN(parseInt(s))); }
+function isChordType(t) { return CHORDS.has(t) || isCustomType(t); }
+function chordIv(t) { return CHORDS.get(t) || (isCustomType(t) ? t.substring(1).split("-").map(s => fm(parseInt(s), 12)) : CHORDS.get("maj")); }
+function customType(iv) { return "x" + iv.join("-"); }
+function yamType(t) {
+  if (t in YAM_TYPE) return YAM_TYPE[t];
+  const iv = new Set(chordIv(t));
+  if (iv.has(3) && iv.has(6)) return 17;
+  if (iv.has(3) && iv.has(10)) return 10;
+  if (iv.has(3)) return 8;
+  if (iv.has(4) && iv.has(10)) return 19;
+  if (iv.has(4) && iv.has(11)) return 2;
+  if (iv.has(4) && iv.has(8)) return 7;
+  if (iv.has(5) && !iv.has(4)) return 32;
+  if (iv.has(2) && !iv.has(4)) return 33;
+  return 0;
+}
+/** Acorde: {root, type, bass (-1 = sin bajo distinto), inv (0 = fundamental)}. */
+function mkChord(root, type, bass = -1, inv = 0) { return { root, type, bass, inv }; }
+function chordName(c) {
+  return (isCustomType(c.type) ? chordIv(c.type).map(i => NN[(c.root + i) % 12]).join(" ") : NN[c.root] + (c.type === "maj" ? "" : c.type)) +
+    (c.inv > 0 ? (SUP[c.inv] || "") : "") + (c.bass >= 0 && c.bass !== c.root ? "/" + NN[c.bass] : "");
+}
+/** Código de inversión: 0..n-1 = inversión real; 100 + intervalo = acorde con barra (bajo distinto). */
+function makeChord(root, type, code) {
+  const iv = chordIv(type);
+  if (code >= SLASH) return mkChord(root, type, fm(root + code - SLASH, 12));
+  if (code >= 1 && code < iv.length) return mkChord(root, type, -1, code);
+  return mkChord(root, type);
+}
+function detectChord(notes) {
+  if (!notes.length) return null;
+  const low = Math.min(...notes);
+  const pcs = new Set(notes.map(n => n % 12));
+  if (pcs.size === 1) return mkChord(low % 12, "maj");
+  let best = null, score = -1;
+  for (const r of pcs) for (const [name, iv] of CHORDS_L) {
+    if (name === "1+8") continue;
+    const set = new Set(iv.map(i => (r + i) % 12));
+    if (set.size !== pcs.size || [...set].some(x => !pcs.has(x))) continue;
+    const s = iv.length * 10 + (r === low % 12 ? 5 : 0);
+    if (s > score) { score = s; best = mkChord(r, name, r !== low % 12 ? low % 12 : -1); }
+  }
+  if (best) return best;
+  const r = low % 12;
+  const rel = new Set([...pcs].map(p => fm(p - r, 12)));
+  const t = rel.has(3) && !rel.has(4) ? (rel.has(10) ? "m7" : "m") : rel.has(10) ? "7" : rel.has(11) ? "maj7" : "maj";
+  return mkChord(r, t);
+}
+
+const Casm = {
+  ROOT_TRANS: 0, ROOT_FIXED: 1, GUITAR: 2, BYPASS: 0, MELODY: 1, CHORD: 2,
+  tab(src, noteMute, chordMute, srcRoot, srcType, ntr, ntt, highKey, low, high, rtr, bass) {
+    return { src, noteMute, chordMute, srcRoot, srcType, ntr, ntt, highKey, low, high, rtr, bass };
+  },
+  defaults: null,
+  def(ch) {
+    if (!this.defaults) this.defaults = Array.from({ length: 16 }, (_, c) =>
+      c === 10 ? this.tab(c, 0, 0, 0, 2, 0, 1, 7, 0, 127, 1, true) :
+      (c >= 11 && c <= 13) ? this.tab(c, 0, 0, 0, 2, 1, 2, 11, 0, 127, 1, false) :
+      (c === 14 || c === 15) ? this.tab(c, 0, 0, 0, 2, 0, 1, 11, 0, 127, 1, false) :
+      this.tab(c, 0, 0, 0, 2, 1, 0, 11, 0, 127, 0, false));
+    return this.defaults[ch & 15];
+  },
+  fixed(t) { return t.ntr === 1 && t.ntt === 0; },
+  interval(i, type, chord) {
+    if (type === "1+8") return i >= 10 ? 12 : 0;
+    const iv = chordIv(type);
+    const has = x => iv.includes(x);
+    const t3 = has(4) ? 4 : has(3) ? 3 : has(5) ? 5 : has(2) ? 2 : -1;
+    const t5 = has(7) ? 7 : has(6) ? 6 : has(8) ? 8 : 7;
+    const t7 = has(11) ? 11 : has(10) ? 10 : (type === "dim7" || type === "dim9") ? 9 : -1;
+    const six = has(9);
+    switch (i) {
+      case 0: return 0;
+      case 1: case 2: return chord ? (has(2) ? 2 : 0) : 2;
+      case 3: case 4: return t3 >= 0 ? t3 : 0;
+      case 5: return chord ? (t3 >= 0 ? t3 : 0) : 5;
+      case 6: case 7: case 8: return t5;
+      case 9: return (six || !chord) ? 9 : t5;
+      default: return t7 >= 0 ? t7 : six ? 9 : chord ? 12 : t3 === 3 ? 10 : 11;
+    }
+  },
+  map(note, t, c, transpose) {
+    if (this.fixed(t)) return note;
+    const r = fm(c.root + transpose, 12);
+    const yt = yamType(c.type);
+    if (t.chordMute !== 0 && Math.floor(t.chordMute / Math.pow(2, yt)) % 2 === 0) return -1;
+    if (t.noteMute !== 0 && ((t.noteMute >> c.root) & 1) === 0) return -1;
+    const chordMode = t.ntt === 2 || t.ntr === 2;
+    const rel = fm(note - t.srcRoot, 12);
+    let j = (t.ntt === 0 && t.ntr !== 2) ? rel : this.interval(rel, c.type, chordMode);
+    if (t.bass && c.bass >= 0 && c.bass !== c.root && rel === 0) j = fm(c.bass - c.root, 12);
+    let n;
+    if (t.ntr === 0) {
+      let delta = fm(r - t.srcRoot, 12);
+      if (r > t.highKey) delta -= 12;
+      n = note + delta + (j - rel);
+    } else {
+      const pc = fm(r + j, 12);
+      let d = fm(pc - note, 12);
+      if (d > 6) d -= 12;
+      n = note + d;
+    }
+    if (c.inv > 0 && chordMode && !t.bass) {     // inversión real: las notas del acorde que van antes suben una octava
+      const ivs = chordIv(c.type).map(x => fm(x, 12));
+      if (c.inv < ivs.length) {
+        const pcRel = fm(n - r, 12);
+        if (ivs.slice(0, c.inv).includes(pcRel) && !ivs.slice(c.inv).includes(pcRel)) n += 12;
+      }
+    }
+    if (t.high - t.low >= 11) {
+      if (n > t.high) n -= Math.floor((n - t.high + 11) / 12) * 12;
+      if (n < t.low) n += Math.floor((t.low - n + 11) / 12) * 12;
+    }
+    return Math.max(0, Math.min(127, n));
+  }
+};
+const GROUPS_CH = { ALL: [...Array(16).keys()], DRUM: [8, 9], ACCOMP: [11, 12, 13, 14, 15], BASS: [10], PIANO: [11], GUITAR: [12], STRINGS: [13], MELODY: [0], OTHER: [14, 15] };
+
+const latin1 = (u8, p, n) => { let s = ""; for (let i = 0; i < n && p + i < u8.length; i++) s += String.fromCharCode(u8[p + i]); return s; };
+// ===== Estilos .sty, proyecto (mismo JSON que Android) y progresiones =====
+const StyParser = {
+  SETUP: new Set(["SFF1", "SFF2", "SInt"]),
+  find(d, tag, from) {
+    const t = [...tag].map(c => c.charCodeAt(0));
+    for (let i = Math.max(0, from); i <= d.length - 4; i++) if (d[i] === t[0] && d[i + 1] === t[1] && d[i + 2] === t[2] && d[i + 3] === t[3]) return i;
+    return -1;
+  },
+  be32(d, p) { return ((d[p] << 24) | (d[p + 1] << 16) | (d[p + 2] << 8) | d[p + 3]) | 0; },
+  parse(d) {
+    if (!(d.length > 14 && this.find(d, "MThd", 0) === 0)) throw new Error("No es un archivo MIDI/STY");
+    const hl = this.be32(d, 4);
+    const n = (d[10] << 8) | d[11];
+    let ppq = (d[12] << 8) | d[13]; if (ppq <= 0 || ppq > 0x7FFF) ppq = 480;
+    const casmAt = this.find(d, "CASM", 8 + hl);
+    const evs = [], marks = [];
+    let bpm = 120, tempoSet = false, maxT = 0, found = 0, p = 8 + hl;
+    const vlq = () => { let v = 0; for (;;) { if (p >= d.length) throw new RangeError(); const b = d[p++]; v = (v << 7) | (b & 0x7F); if (b < 0x80) break; } return v; };
+    while (p + 8 <= d.length && found < n) {
+      const id = this.be32(d, p), len = this.be32(d, p + 4); p += 8;
+      let end = p + len;
+      if (len < 0 || end > d.length) end = d.length;
+      if (casmAt > p && end > casmAt) end = casmAt;
+      if (id !== 0x4D54726B) { p = end; continue; }
+      found++;
+      let t = 0, run = 0;
+      try {
+        while (p < end) {
+          t += vlq();
+          let s = d[p];
+          if (s < 0x80) s = run; else { p++; if (s < 0xF0) run = s; }
+          if (s === 0) break;
+          if (s === 0xFF) {
+            const ty = d[p++], l = vlq();
+            if (ty === 0x2F) break;
+            if (ty === 0x06) marks.push([latin1(d, p, Math.min(l, d.length - p)).trim(), t]);
+            if (ty === 0x51 && l === 3 && !tempoSet) { const us = (d[p] << 16) | (d[p + 1] << 8) | d[p + 2]; if (us > 0) { bpm = 60000000 / us; tempoSet = true; } }
+            p += l;
+          } else if (s === 0xF0 || s === 0xF7) { const l = vlq(); p += l; }
+          else {
+            if (p >= d.length) break;
+            const a = d[p++] & 0x7F;
+            const b = ((s & 0xF0) === 0xC0 || (s & 0xF0) === 0xD0) ? 0 : (d[p++] & 0x7F);
+            evs.push([t, s, a, b]);
+          }
+        }
+      } catch (e) { }
+      maxT = Math.max(maxT, t); p = end;
+    }
+    const sff2 = marks.some(m => m[0] === "SFF2");
+    const sorted = marks.filter(m => m[0] && !this.SETUP.has(m[0])).sort((a, b) => a[1] - b[1]);
+    const secs = {};
+    for (let i = 0; i < sorted.length; i++) {
+      const s = sorted[i][1], e = i + 1 < sorted.length ? sorted[i + 1][1] : maxT;
+      if (e > s && !(sorted[i][0] in secs)) secs[sorted[i][0]] = [s, e];
+    }
+    const casm = {};
+    if (casmAt >= 0) try { this.parseCasm(d, casmAt, sff2, casm); } catch (e) { }
+    evs.sort((a, b) => a[0] - b[0]);
+    const N = evs.length, ev = { n: N, tick: new Int32Array(N), st: new Uint8Array(N), a: new Uint8Array(N), b: new Uint8Array(N) };
+    evs.forEach((e, i) => { ev.tick[i] = e[0]; ev.st[i] = e[1]; ev.a[i] = e[2]; ev.b[i] = e[3]; });
+    return { ppq, ev, sections: secs, bpm, casm };
+  },
+  parseCasm(d, at, sff2, out) {
+    const end = Math.min(d.length, at + 8 + this.be32(d, at + 4));
+    let q = at + 8;
+    while (q + 8 <= end) {
+      const id = latin1(d, q, 4), len = this.be32(d, q + 4), s = q + 8;
+      if (len < 0) break;
+      if (id === "CSEG") this.parseSeg(d, s, Math.min(end, s + len), sff2, out);
+      q = s + len;
+    }
+  },
+  parseSeg(d, a, e, sff2, out) {
+    let names = [];
+    const tabs = new Array(16).fill(null), bass = new Array(16).fill(false);
+    let q = a;
+    while (q + 8 <= e) {
+      const id = latin1(d, q, 4), len = this.be32(d, q + 4), s = q + 8;
+      if (len < 0 || s + len > e) break;
+      if (id === "Sdec") names = latin1(d, s, len).split(",").map(x => x.trim()).filter(x => x);
+      else if (id === "Ctab" && len >= 27) { const t = this.tab(d, s, false, sff2); tabs[t.src] = t; }
+      else if (id === "Ctb2" && len >= 40) { const t = this.tab(d, s, true, sff2); tabs[t.src] = t; }
+      else if (id === "Cntt") { for (let i = 0; i + 1 < len; i += 2) if (d[s + i + 1] & 0x80) bass[d[s + i] & 15] = true; }
+      q = s + len;
+    }
+    for (let ch = 0; ch < 16; ch++) if (tabs[ch] && bass[ch]) tabs[ch].bass = true;
+    for (const nm of names) out[nm] = tabs;
+  },
+  tab(d, s, two, sff2) {
+    const b = i => d[s + i];
+    let cm = 0; for (let i = 13; i <= 17; i++) cm = cm * 256 + b(i);
+    const o = two ? 28 : 20;
+    const ntr = b(o) > 2 ? 0 : b(o);
+    let ntt = b(o + 1) & 0x7F, bass = !two && (b(o + 1) & 0x80) !== 0;
+    if (!sff2 && ntt === 3) { ntt = 1; bass = true; }
+    return Casm.tab(b(0) & 15, (b(11) << 8) | b(12), cm, b(18) % 12, b(19), ntr, ntt, b(o + 2) % 12, b(o + 3), b(o + 4), b(o + 5), bass);
+  }
+};
+
+
+// ===== Núcleo del editor de secciones .sty (SFF1 / SFF2) =====
+// Lee un .sty, lo separa en: preparación (SInt), secciones (Intro/Main/Fill/Ending),
+// CASM (por sección) y el resto de bloques (OTS, MDB, MH...), y lo vuelve a escribir.
+const StyCore = (() => {
+  const SLOTS = [
+    "Main A", "Main B", "Main C", "Main D",
+    "Fill In AA", "Fill In BB", "Fill In CC", "Fill In DD",
+    "Intro A", "Intro B", "Intro C", "Intro D",
+    "Ending A", "Ending B", "Ending C", "Ending D",
+    "Fill In BA"
+  ];
+  const SETUP = new Set(["SFF1", "SFF2", "SInt"]);
+  const enc = s => Uint8Array.from([...s].map(c => c.charCodeAt(0) & 255));
+  const dec = (d, a, n) => { let s = ""; for (let i = 0; i < n; i++) s += String.fromCharCode(d[a + i]); return s; };
+  const be32 = (d, p) => ((d[p] << 24) | (d[p + 1] << 16) | (d[p + 2] << 8) | d[p + 3]) >>> 0;
+  const u32 = n => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
+  const vlqBytes = n => { const o = [n & 0x7F]; n >>>= 7; while (n > 0) { o.unshift((n & 0x7F) | 0x80); n >>>= 7; } return o; };
+  const concat = parts => { let n = 0; for (const p of parts) n += p.length; const o = new Uint8Array(n); let i = 0; for (const p of parts) { o.set(p, i); i += p.length; } return o; };
+  const chunk = (tag, body) => concat([enc(tag), Uint8Array.from(u32(body.length)), body]);
+  const eqBytes = (a, b) => { if (a.length !== b.length) return false; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; };
+
+  function kind(name) {
+    if (name.startsWith("Intro")) return "Intro";
+    if (name.startsWith("Main")) return "Main";
+    if (name === "Fill In BA") return "Break";
+    if (name.startsWith("Fill")) return "Fill";
+    if (name.startsWith("Ending")) return "Ending";
+    return "Otra";
+  }
+  const slotIndex = n => { const i = SLOTS.indexOf(n); return i < 0 ? 999 : i; };
+
+  // ---------- Lectura ----------
+  function parse(bytes, fileName) {
+    const d = new Uint8Array(bytes); // copia propia (así Buffer.slice no comparte memoria)
+    if (d.length < 14 || dec(d, 0, 4) !== "MThd") throw new Error("No es un archivo de estilo (.sty)");
+    const hl = be32(d, 4);
+    const header = d.slice(8, 8 + hl);
+    let ppq = (d[12] << 8) | d[13];
+    if (ppq <= 0 || ppq > 0x7FFF) ppq = 480;
+    let p = 8 + hl, trk = null;
+    const others = [];
+    let casm = null;
+    while (p + 8 <= d.length) {
+      const tag = dec(d, p, 4), len = be32(d, p + 4), s = p + 8;
+      const end = Math.min(d.length, s + len);
+      if (!/^[\x20-\x7E]{4}$/.test(tag)) break; // basura al final
+      if (tag === "MTrk" && !trk) trk = d.subarray(s, end);
+      else if (tag === "CASM" && !casm) casm = parseCasm(d.subarray(s, end));
+      else if (tag !== "MTrk") others.push({ tag, body: d.slice(s, end) });
+      p = s + len;
+    }
+    if (!trk) throw new Error("El archivo no trae pista MIDI");
+    const evs = readTrack(trk);
+    // Partición por orden de aparición: un marcador abre su sección
+    let fmt = "SFF1", setup = [], secs = [], cur = null, eot = 0;
+    for (const e of evs) {
+      if (e.eot) { eot = e.t; break; }
+      const m = e.marker;
+      if (m !== undefined && !SETUP.has(m) && m.length) {
+        cur = { name: m, start: e.t, events: [] };
+        secs.push(cur);
+        continue;
+      }
+      if (m === "SFF2") fmt = "SFF2";
+      (cur ? cur.events : setup).push(e);
+    }
+    if (!eot) eot = evs.length ? evs[evs.length - 1].t : 0;
+    const setupLen = secs.length ? secs[0].start : eot;
+    const sections = [];
+    for (let i = 0; i < secs.length; i++) {
+      const s = secs[i], end = i + 1 < secs.length ? secs[i + 1].start : eot;
+      const len = Math.max(0, end - s.start);
+      sections.push({ name: s.name, len, events: s.events.map(e => ({ t: e.t - s.start, b: e.b })) });
+    }
+    // Note-offs que quedaron en el tiempo 0 de la sección siguiente vuelven al final de la anterior
+    for (let i = 1; i < sections.length; i++) {
+      const s = sections[i], prev = sections[i - 1], keep = [], on = new Set();
+      for (const e of s.events) {
+        const st = e.b[0], ty = st & 0xF0;
+        const isOn = ty === 0x90 && e.b[2] > 0, isOff = ty === 0x80 || (ty === 0x90 && e.b[2] === 0);
+        if (e.t === 0 && isOff && !on.has((st & 15) * 128 + e.b[1])) { prev.events.push({ t: prev.len, b: e.b }); continue; }
+        if (isOn) on.add((st & 15) * 128 + e.b[1]);
+        keep.push(e);
+      }
+      s.events = keep;
+    }
+    // Quitar duplicados de nombre (se queda la primera)
+    const seen = new Set(), uniq = [];
+    for (const s of sections) if (!seen.has(s.name)) { seen.add(s.name); uniq.push(s); }
+    const num = s => (s.match(/[A-D]{1,2}$/) || [""])[0];
+    return {
+      name: fileName || "estilo.sty",
+      header, ppq, fmt,
+      setup: setup.map(e => ({ t: e.t, b: e.b })), setupLen,
+      sections: uniq,
+      casm: casm || [],
+      others,
+      timeSig: findTimeSig(setup),
+      dirty: false
+    };
+  }
+
+  function readTrack(d) {
+    const out = [];
+    let p = 0, t = 0, run = 0;
+    const vlq = () => { let v = 0; for (let k = 0; k < 5; k++) { if (p >= d.length) throw new RangeError("fin"); const b = d[p++]; v = (v << 7) | (b & 0x7F); if (b < 0x80) return v; } return v; };
+    try {
+      while (p < d.length) {
+        t += vlq();
+        let st = d[p];
+        if (st < 0x80) { if (!run) break; st = run; } else { p++; if (st < 0xF0) run = st; else if (st < 0xF8) run = 0; }
+        if (st === 0xFF) {
+          const ty = d[p++], a = p, l = vlq(), s = p;
+          p = s + l;
+          if (ty === 0x2F) { out.push({ t, eot: true }); break; }
+          const b = concat([Uint8Array.of(0xFF, ty), Uint8Array.from(vlqBytes(l)), d.slice(s, s + l)]);
+          const e = { t, b };
+          if (ty === 0x06) e.marker = dec(d, s, l).replace(/\0+$/, "").trim();
+          out.push(e);
+        } else if (st === 0xF0 || st === 0xF7) {
+          const l = vlq(), s = p; p = s + l;
+          out.push({ t, b: concat([Uint8Array.of(st), Uint8Array.from(vlqBytes(l)), d.slice(s, s + l)]) });
+        } else {
+          const ty = st & 0xF0, n = (ty === 0xC0 || ty === 0xD0) ? 1 : 2;
+          const b = new Uint8Array(1 + n); b[0] = st;
+          for (let k = 0; k < n; k++) b[1 + k] = d[p++] & 0x7F;
+          out.push({ t, b });
+        }
+      }
+    } catch (e) { /* pista truncada: usamos lo leído */ }
+    return out;
+  }
+
+  function findTimeSig(evs) {
+    for (const e of evs) if (e.b[0] === 0xFF && e.b[1] === 0x58) return [e.b[3], 1 << e.b[4]];
+    return [4, 4];
+  }
+
+  // CASM -> lista de segmentos { names:[...], subs:[{tag, body}] }
+  function parseCasm(d) {
+    const segs = [];
+    let q = 0;
+    while (q + 8 <= d.length) {
+      const tag = dec(d, q, 4), len = be32(d, q + 4), s = q + 8, e = Math.min(d.length, s + len);
+      if (tag === "CSEG") {
+        const seg = { names: [], subs: [] };
+        let r = s;
+        while (r + 8 <= e) {
+          const t2 = dec(d, r, 4), l2 = be32(d, r + 4), s2 = r + 8;
+          if (s2 + l2 > e) break;
+          if (t2 === "Sdec") seg.names = dec(d, s2, l2).split(",").map(x => x.replace(/\0/g, "").trim()).filter(x => x);
+          else seg.subs.push({ tag: t2, body: d.slice(s2, s2 + l2) });
+          r = s2 + l2;
+        }
+        segs.push(seg);
+      }
+      q = s + len;
+    }
+    return segs;
+  }
+
+  // ---------- Escritura ----------
+  function build(st) {
+    const evs = [];
+    for (const e of st.setup) evs.push([e.t, e.b]);
+    let off = st.setupLen;
+    const ordered = [...st.sections].sort((a, b) => slotIndex(a.name) - slotIndex(b.name));
+    for (const s of ordered) {
+      const nm = enc(s.name);
+      evs.push([off, concat([Uint8Array.of(0xFF, 0x06), Uint8Array.from(vlqBytes(nm.length)), nm])]);
+      for (const e of s.events) evs.push([off + Math.min(e.t, s.len), e.b]);
+      off += s.len;
+    }
+    const parts = [];
+    let last = 0;
+    for (const [t, b] of evs) { const tt = Math.max(t, last); parts.push(Uint8Array.from(vlqBytes(tt - last)), b); last = tt; }
+    const end = Math.max(off, last);
+    parts.push(Uint8Array.from(vlqBytes(end - last)), Uint8Array.of(0xFF, 0x2F, 0x00));
+    const trk = concat(parts);
+    const hdr = st.header.slice();
+    if (hdr.length >= 6) { hdr[0] = 0; hdr[1] = 0; hdr[2] = 0; hdr[3] = 1; hdr[4] = (st.ppq >> 8) & 255; hdr[5] = st.ppq & 255; }
+    const out = [chunk("MThd", hdr), chunk("MTrk", trk)];
+    const live = new Set(st.sections.map(s => s.name));
+    const segs = st.casm.map(g => ({ names: g.names.filter(n => live.has(n)), subs: g.subs })).filter(g => g.names.length);
+    if (segs.length) {
+      const body = concat(segs.map(g => chunk("CSEG", concat([chunk("Sdec", enc(g.names.join(","))), ...g.subs.map(x => chunk(x.tag, x.body))]))));
+      out.push(chunk("CASM", body));
+    }
+    for (const o of st.others) out.push(chunk(o.tag, o.body));
+    return concat(out);
+  }
+
+  // ---------- Conversión SFF1 -> SFF2 ----------
+  const NTT1TO2 = [0x00, 0x01, 0x02, 0x81, 0x03, 0x05];
+  function ctabToCtb2(b) {
+    const o = new Uint8Array(47);
+    o.set(b.subarray(0, 20), 0);
+    o[20] = 0x00; o[21] = 0x7F;
+    const ntt = NTT1TO2[b[21]] !== undefined ? NTT1TO2[b[21]] : 0x00;
+    const zone = [b[20], ntt, b[22], b[23], b[24], b[25]];
+    o.set(zone, 22); o.set(zone, 28); o.set(zone, 34);
+    return o;
+  }
+  const subsToSff2 = subs => subs.map(x => x.tag === "Ctab" && x.body.length >= 26 ? { tag: "Ctb2", body: ctabToCtb2(x.body) } : x);
+  const NTT2TO1 = n => { const bass = n & 0x80, t = n & 0x7F; if (bass && t <= 1) return 3; return [0, 1, 2, 4, 4, 5, 5, 1, 1, 1, 1][t] ?? 1; };
+  function ctb2ToCtab(b) {
+    const o = new Uint8Array(27);
+    o.set(b.subarray(0, 20), 0);
+    o[20] = b[28]; o[21] = NTT2TO1(b[29]); o[22] = b[30]; o[23] = b[31]; o[24] = b[32]; o[25] = b[33]; o[26] = 0;
+    return o;
+  }
+  const subsToSff1 = subs => subs.map(x => x.tag === "Ctb2" && x.body.length >= 34 ? { tag: "Ctab", body: ctb2ToCtab(x.body) } : x);
+  function upgradeToSff2(st) {
+    if (st.fmt === "SFF2") return;
+    st.fmt = "SFF2";
+    const two = enc("SFF2");
+    for (const e of st.setup) {
+      if (e.b[0] === 0xFF && e.b[1] === 0x06 && e.b[2] === 4 && dec(e.b, 3, 4) === "SFF1") e.b = concat([Uint8Array.of(0xFF, 0x06, 4), two]);
+    }
+    st.casm = st.casm.map(g => ({ names: g.names, subs: subsToSff2(g.subs) }));
+  }
+
+  // ---------- Operaciones ----------
+  const get = (st, name) => st.sections.find(s => s.name === name);
+  function casmOf(st, name) { const g = st.casm.find(g => g.names.includes(name)); return g ? g.subs : null; }
+  function dropCasm(st, name) { for (const g of st.casm) g.names = g.names.filter(n => n !== name); st.casm = st.casm.filter(g => g.names.length); }
+  function putCasm(st, name, subs) {
+    dropCasm(st, name);
+    if (!subs) return;
+    const same = st.casm.find(g => g.subs.length === subs.length && g.subs.every((x, i) => x.tag === subs[i].tag && eqBytes(x.body, subs[i].body)));
+    if (same) same.names.push(name); else st.casm.push({ names: [name], subs: subs.map(x => ({ tag: x.tag, body: x.body.slice() })) });
+  }
+
+  function remove(st, name) {
+    st.sections = st.sections.filter(s => s.name !== name);
+    dropCasm(st, name);
+    st.dirty = true;
+  }
+
+  function renameEvents(events, from, to) {
+    const a = "fn:" + from;
+    return events.map(e => {
+      if (e.b[0] === 0xFF && (e.b[1] === 0x01 || e.b[1] === 0x06)) {
+        let p = 2, l = 0; while (e.b[p] & 0x80) l = (l << 7) | (e.b[p++] & 0x7F); l = (l << 7) | e.b[p++];
+        const txt = dec(e.b, p, l), clean = txt.replace(/\0+$/, "");
+        if (clean === a) { const nb = enc("fn:" + to + txt.slice(clean.length)); return { t: e.t, b: concat([Uint8Array.of(0xFF, e.b[1]), Uint8Array.from(vlqBytes(nb.length)), nb]) }; }
+      }
+      return { t: e.t, b: e.b };
+    });
+  }
+
+  // Copia la sección `name` de `src` a `dst` con el nombre `to` (reemplaza si existe)
+  function copy(src, name, dst, to) {
+    const s = get(src, name);
+    if (!s) throw new Error("No existe " + name);
+    const k = dst.ppq / src.ppq;
+    const scale = t => Math.round(t * k);
+    let events = renameEvents(s.events, name, to).map(e => ({ t: scale(e.t), b: e.b }));
+    let subs = casmOf(src, name);
+    // El archivo destino conserva su formato (SFF1 o SFF2) para seguir sirviendo en el mismo teclado
+    if (subs && dst.fmt === "SFF2" && src.fmt !== "SFF2") subs = subsToSff2(subs);
+    if (subs && dst.fmt !== "SFF2" && src.fmt === "SFF2") subs = subsToSff1(subs);
+    const sec = { name: to, len: scale(s.len), events };
+    if (src === dst && name === to) return;
+    const i = dst.sections.findIndex(x => x.name === to);
+    if (i >= 0) dst.sections[i] = sec; else dst.sections.push(sec);
+    putCasm(dst, to, subs);
+    dst.dirty = true;
+  }
+
+  function rename(st, from, to) {
+    if (from === to) return;
+    const s = get(st, from); if (!s) return;
+    const subs = casmOf(st, from);
+    const other = get(st, to);
+    const otherSubs = other ? casmOf(st, to) : null;
+    // intercambio si el destino está ocupado
+    s.events = renameEvents(s.events, from, to); s.name = to;
+    dropCasm(st, from);
+    if (other) { other.events = renameEvents(other.events, to, from); other.name = from; putCasm(st, from, otherSubs); }
+    putCasm(st, to, subs);
+    st.dirty = true;
+  }
+
+
+  // ---------- Edición detallada de una sección ----------
+  const CH_NAMES = ["Canal 1", "Canal 2", "Canal 3", "Canal 4", "Canal 5", "Canal 6", "Canal 7", "Canal 8", "Ritmo 1", "Ritmo 2", "Bajo", "Acorde 1", "Acorde 2", "Pad", "Frase 1", "Frase 2"];
+  const isChan = e => e.b[0] >= 0x80 && e.b[0] < 0xF0;
+  const isOn = e => (e.b[0] & 0xF0) === 0x90 && e.b[2] > 0;
+  const isOff = e => (e.b[0] & 0xF0) === 0x80 || ((e.b[0] & 0xF0) === 0x90 && e.b[2] === 0);
+  const chOf = e => e.b[0] & 15;
+  const barTicks = st => st.ppq * 4 * st.timeSig[0] / st.timeSig[1];
+
+  function trackStats(sec) {
+    const m = new Map();
+    for (const e of sec.events) if (isChan(e)) {
+      const c = chOf(e); let r = m.get(c); if (!r) m.set(c, r = { ch: c, notes: 0, min: 127, max: 0, vel: 0 });
+      if (isOn(e)) { r.notes++; r.min = Math.min(r.min, e.b[1]); r.max = Math.max(r.max, e.b[1]); r.vel += e.b[2]; }
+    }
+    return [...m.values()].sort((a, b) => a.ch - b.ch).map(r => ({ ...r, vel: r.notes ? Math.round(r.vel / r.notes) : 0 }));
+  }
+
+  // Corta los eventos de canal a [0, L): las notas que siguen sonando se cierran en L
+  function clip(events, L) {
+    const out = [], act = new Map();
+    for (const e of events) {
+      if (e.t < L) { out.push(e); if (isChan(e)) { const k = chOf(e) * 128 + e.b[1]; if (isOn(e)) act.set(k, e); else if (isOff(e)) act.delete(k); } }
+      else if (isChan(e) && isOff(e)) { const k = chOf(e) * 128 + e.b[1]; if (act.has(k)) { act.delete(k); out.push({ t: L, b: e.b }); } }
+    }
+    for (const e of act.values()) out.push({ t: L, b: Uint8Array.of(0x80 | chOf(e), e.b[1], 0) });
+    return out;
+  }
+  // Rellena [0, newLen) repitiendo los eventos de canal de [0, len)
+  function fill(events, len, newLen) {
+    const chan = events.filter(isChan), other = events.filter(e => !isChan(e));
+    const out = [...other];
+    for (let off = 0; off < newLen; off += len) out.push(...clip(chan, len).map(e => ({ t: e.t + off, b: e.b })));
+    return clip(out.sort((a, b) => a.t - b.t), newLen);
+  }
+  // modo "trim": solo recorta o deja silencio al final. modo "repeat": repite el contenido hasta llenar.
+  function setBars(st, name, bars, mode) {
+    const sec = get(st, name); if (!sec) return;
+    const L = Math.max(1, Math.round(bars * barTicks(st)));
+    if (L === sec.len) return;
+    if (L < sec.len || mode !== "repeat") sec.events = clip(sec.events, Math.min(L, sec.len)).sort((a, b) => a.t - b.t);
+    else sec.events = fill(sec.events, sec.len, L);
+    sec.len = L; st.dirty = true;
+  }
+  const mapNotes = (sec, ch, fn) => {
+    sec.events = sec.events.map(e => (isChan(e) && (e.b[0] & 0xF0) >= 0x80 && (e.b[0] & 0xF0) <= 0x90 && (ch < 0 || chOf(e) === ch)) ? { t: e.t, b: fn(e.b) } : e);
+  };
+  function trackRemove(st, name, ch) { const s = get(st, name); s.events = s.events.filter(e => !(isChan(e) && chOf(e) === ch && (e.b[0] & 0xF0) >= 0x80 && (e.b[0] & 0xF0) <= 0x90)); st.dirty = true; }
+  function trackVel(st, name, ch, pct) {
+    mapNotes(get(st, name), ch, b => (b[0] & 0xF0) === 0x90 && b[2] > 0 ? Uint8Array.of(b[0], b[1], Math.max(1, Math.min(127, Math.round(b[2] * pct / 100)))) : b);
+    st.dirty = true;
+  }
+  function trackOct(st, name, ch, semis) {
+    const sec = get(st, name), bad = new Set();
+    // un sonido que se saldría de 0..127 se queda igual (así no se desparejan notas y finales)
+    for (const e of sec.events) if (isChan(e) && (ch < 0 || chOf(e) === ch) && (e.b[0] & 0xF0) >= 0x80 && (e.b[0] & 0xF0) <= 0x90) { const n = e.b[1] + semis; if (n < 0 || n > 127) bad.add(chOf(e) * 128 + e.b[1]); }
+    mapNotes(sec, ch, b => bad.has((b[0] & 15) * 128 + b[1]) ? b : Uint8Array.of(b[0], b[1] + semis, b[2]));
+    st.dirty = true;
+  }
+  // Copia la pista `ch` de una sección a la pista `dch` de otra (con su CASM)
+  function copyTrack(src, name, ch, dst, to, dch) {
+    const a = get(src, name), b = get(dst, to);
+    if (!a || !b) throw new Error("No existe la sección");
+    const k = dst.ppq / src.ppq, srcLen = Math.max(1, Math.round(a.len * k));
+    let ev = a.events.filter(e => isChan(e) && chOf(e) === ch).map(e => ({ t: Math.round(e.t * k), b: dch === ch ? e.b : Uint8Array.of((e.b[0] & 0xF0) | dch, e.b[1], e.b[2]) }));
+    ev = fill(ev, srcLen, b.len);
+    b.events = b.events.filter(e => !(isChan(e) && chOf(e) === dch)).concat(ev).sort((x, y) => x.t - y.t);
+    const ssub = casmOf(src, name);
+    const tab = ssub && ssub.find(x => (x.tag === "Ctab" || x.tag === "Ctb2") && (x.body[0] & 15) === ch);
+    if (tab) {
+      let body = tab.body.slice();
+      if (src.fmt === "SFF2" && dst.fmt !== "SFF2" && tab.tag === "Ctb2") body = ctb2ToCtab(body);
+      if (src.fmt !== "SFF2" && dst.fmt === "SFF2" && tab.tag === "Ctab") body = ctabToCtb2(body);
+      body[0] = dch;
+      const tag = dst.fmt === "SFF2" ? "Ctb2" : "Ctab";
+      const cur = (casmOf(dst, to) || []).map(x => ({ tag: x.tag, body: x.body.slice() }));
+      const i = cur.findIndex(x => (x.tag === "Ctab" || x.tag === "Ctb2") && (x.body[0] & 15) === dch);
+      if (i >= 0) cur[i] = { tag, body }; else cur.push({ tag, body });
+      putCasm(dst, to, cur);
+    }
+    dst.dirty = true;
+  }
+
+  // ---------- CASM de una pista ----------
+  const CHORD_TYPES = ["Mayor", "6", "Maj7", "Maj7#11", "add9", "Maj7(9)", "6(9)", "aug", "menor", "m6", "m7", "m7b5", "m(9)", "m7(9)", "m7(11)", "mMaj7", "mMaj7(9)", "dim", "dim7", "7", "7sus4", "7b5", "7(9)", "7#11", "7(13)", "7(b9)", "7(b13)", "7(#9)", "Maj7aug", "7aug", "1+8", "1+5", "sus4", "sus2"];
+  const NTR = ["Transposición de raíz", "Raíz fija", "Guitarra"], NTT = ["Bypass (sin cambios)", "Melodía", "Acorde"];
+  const RTR = ["Stop (se corta)", "Pitch shift", "Pitch shift a la raíz", "Retrigger", "Retrigger a la raíz", "Generador de notas"];
+  const tabOf = (st, name, ch) => { const subs = casmOf(st, name); return subs && subs.find(x => (x.tag === "Ctab" || x.tag === "Ctb2") && (x.body[0] & 15) === ch); };
+  function casmGet(st, name, ch) {
+    const t = tabOf(st, name, ch); if (!t) return null;
+    const b = t.body, o = t.tag === "Ctb2" ? 28 : 20;
+    return { two: t.tag === "Ctb2", srcRoot: b[18], srcType: b[19], ntr: b[o], ntt: b[o + 1] & 0x7F, bassBit: b[o + 1] & 0x80, highKey: b[o + 2], low: b[o + 3], high: b[o + 4], rtr: b[o + 5] };
+  }
+  function casmSet(st, name, ch, f) {
+    const subs = (casmOf(st, name) || []).map(x => ({ tag: x.tag, body: x.body.slice() }));
+    const t = subs.find(x => (x.tag === "Ctab" || x.tag === "Ctb2") && (x.body[0] & 15) === ch); if (!t) return;
+    const b = t.body, o = t.tag === "Ctb2" ? 28 : 20;
+    if (f.srcRoot !== undefined) b[18] = f.srcRoot;
+    if (f.srcType !== undefined) b[19] = f.srcType;
+    if (f.ntr !== undefined) b[o] = f.ntr;
+    if (f.ntt !== undefined) b[o + 1] = (b[o + 1] & 0x80) | f.ntt;
+    if (f.highKey !== undefined) b[o + 2] = f.highKey;
+    if (f.low !== undefined) b[o + 3] = f.low;
+    if (f.high !== undefined) b[o + 4] = f.high;
+    if (f.rtr !== undefined) b[o + 5] = f.rtr;
+    putCasm(st, name, subs); st.dirty = true;
+  }
+
+  // Copia profunda para deshacer
+  const snapshot = st => ({
+    ...st,
+    setup: st.setup.map(e => ({ t: e.t, b: e.b })),
+    sections: st.sections.map(s => ({ name: s.name, len: s.len, events: s.events.slice() })),
+    casm: st.casm.map(g => ({ names: g.names.slice(), subs: g.subs.slice() }))
+  });
+
+  const bars = (st, s) => { const [n, den] = st.timeSig; const bar = st.ppq * 4 * n / den; return bar ? Math.round(s.len / bar * 10) / 10 : 0; };
+  const notes = s => s.events.reduce((a, e) => a + (((e.b[0] & 0xF0) === 0x90 && e.b[2] > 0) ? 1 : 0), 0);
+  const styleName = st => { for (const e of st.setup) if (e.b[0] === 0xFF && e.b[1] === 0x03) { let p = 2, l = 0; while (e.b[p] & 0x80) l = (l << 7) | (e.b[p++] & 0x7F); l = (l << 7) | e.b[p++]; return dec(e.b, p, l).replace(/\0+$/, "").trim(); } return ""; };
+
+  return { CH_NAMES, CHORD_TYPES, NTR, NTT, RTR, barTicks, trackStats, setBars, trackRemove, trackVel, trackOct, copyTrack, casmGet, casmSet, SLOTS, kind, slotIndex, parse, build, copy, remove, rename, snapshot, bars, notes, styleName, get, casmOf };
+})();
+if (typeof module !== "undefined") module.exports = StyCore;
+
+</script>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const files = [];      // { id, st }
+  let sel = [];          // { id, name }
+  const undo = [], redo = [];  // [{ label, items: [{ id, st }] }]
+  let nextId = 1;
+  let last = null;       // última sección tocada (para escuchar)
+  const KCOL = { Intro: "var(--intro)", Main: "var(--main)", Fill: "var(--fill)", Break: "var(--brk)", Ending: "var(--end)", Otra: "var(--mute)" };
+  const KNAME = { Intro: "Intro", Main: "Main", Fill: "Fill In", Break: "Break", Ending: "Ending", Otra: "Otras" };
+  const KORD = ["Intro", "Main", "Fill", "Break", "Ending", "Otra"];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fileById = id => files.find(f => f.id === id);
+  const short = n => n.replace(/^Fill In /, "").replace(/^(Intro|Main|Ending) /, "");
+
+  function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("on"), 2600); }
+  function pushUndo(ids, label) {
+    undo.push({ label, items: ids.map(id => { const f = fileById(id); return f ? { id, st: StyCore.snapshot(f.st) } : null; }).filter(Boolean) });
+    if (undo.length > 40) undo.shift();
+    redo.length = 0;
+  }
+
+  // ---------- Abrir ----------
+  $("#open").onclick = () => $("#file").click();
+  $("#file").onchange = async e => {
+    for (const f of e.target.files) {
+      try {
+        const st = StyCore.parse(new Uint8Array(await f.arrayBuffer()), f.name);
+        if (!st.sections.length) throw new Error("no tiene secciones");
+        files.push({ id: nextId++, st });
+      } catch (err) { toast(`No pude abrir ${f.name}: ${err.message}`); }
+    }
+    e.target.value = "";
+    render();
+  };
+  // Arrastrar archivos (PC)
+  addEventListener("dragover", e => e.preventDefault());
+  addEventListener("drop", async e => { e.preventDefault(); const dt = new DataTransfer(); for (const f of e.dataTransfer.files) dt.items.add(f); $("#file").files = dt.files; $("#file").onchange({ target: $("#file") }); });
+
+  // ---------- Pintar ----------
+  function render() {
+    const L = $("#list");
+    sel = sel.filter(s => { const f = fileById(s.id); return f && StyCore.get(f.st, s.name); });
+    if (!files.length) {
+      L.innerHTML = `<div class="empty"><b>Abre uno o varios archivos .sty</b>Toca <b style="display:inline">＋ Abrir</b> y elige tus estilos. Luego toca las secciones para seleccionarlas y cópialas, muévelas o elimínalas.</div>`;
+    } else L.innerHTML = files.map(card).join("");
+    const n = sel.length;
+    $("#bar").classList.toggle("on", n > 0);
+    for (const id of ["bPlay", "bCopy", "bMove", "bDel"]) $("#" + id).disabled = !n;
+    $("#cnt").textContent = n === 0 ? "Toca una sección para escucharla, copiarla, moverla o eliminarla" : n === 1 ? `1 sección seleccionada (${sel[0].name})` : `${n} secciones seleccionadas`;
+    $("#clr").style.display = n ? "" : "none";
+    $("#bRen").disabled = n !== 1; $("#bEdit").disabled = n !== 1;
+    if (!last || !sel.some(x => x.id === last.id && x.name === last.name)) last = sel[sel.length - 1] || null;
+    $("#pName").textContent = last ? `${last.name} · ${fileById(last.id).st.name}` : "";
+    if (!n && Player.playing) Player.stop();
+    $("#undo").disabled = !undo.length; $("#redo").disabled = !redo.length;
+    $("#undo").title = undo.length ? "Deshacer: " + undo[undo.length - 1].label : "Nada que deshacer";
+    $("#redo").title = redo.length ? "Rehacer: " + redo[redo.length - 1].label : "Nada que rehacer";
+  }
+
+  function card(f) {
+    const st = f.st, nm = StyCore.styleName(st);
+    const groups = {};
+    for (const s of st.sections) (groups[StyCore.kind(s.name)] ||= []).push(s);
+    const body = KORD.filter(k => groups[k]).map(k => {
+      const list = groups[k].sort((a, b) => StyCore.slotIndex(a.name) - StyCore.slotIndex(b.name));
+      return `<div class="grp"><h4><i style="background:${KCOL[k]}"></i>${KNAME[k]}</h4><div class="chips">${list.map(s => {
+        const on = sel.some(x => x.id === f.id && x.name === s.name), bars = StyCore.bars(st, s), notes = StyCore.notes(s);
+        const label = k === "Break" ? "Break" : (k === "Otra" ? s.name : short(s.name));
+        return `<button class="chip${on ? " sel" : ""}${notes ? "" : " empty0"}" style="--k:${KCOL[k]}" data-f="${f.id}" data-s="${esc(s.name)}"><b>${esc(label)}</b><small>${bars} comp.${notes ? "" : " · vacía"}</small></button>`;
+      }).join("")}</div></div>`;
+    }).join("");
+    const bpm = tempoOf(st);
+    return `<section class="card${st.dirty ? " dirty" : ""}">
+      <div class="ctop"><div class="nm"><b>${esc(st.name)}</b><small>${nm && nm !== st.name ? esc(nm) + " · " : ""}</small>
+        <span class="tag">${st.fmt}</span><span class="tag">${st.timeSig[0]}/${st.timeSig[1]}</span>${bpm ? `<span class="tag">${bpm} bpm</span>` : ""}${st.dirty ? `<span class="tag mod">modificado</span>` : ""}</div>
+        <button class="x ghost" data-close="${f.id}" title="Cerrar">✕</button></div>
+      ${body}
+      <div class="cfoot"><button data-all="${f.id}">Seleccionar todo</button><button data-dup="${f.id}">Duplicar</button><button class="pri" data-save="${f.id}">Guardar</button></div>
+    </section>`;
+  }
+  function tempoOf(st) { for (const e of st.setup) if (e.b[0] === 0xFF && e.b[1] === 0x51) { const us = (e.b[3] << 16) | (e.b[4] << 8) | e.b[5]; return us ? Math.round(60000000 / us) : 0; } return 0; }
+
+  $("#list").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.s !== undefined) {
+      const id = +b.dataset.f, name = b.dataset.s, i = sel.findIndex(x => x.id === id && x.name === name);
+      if (i >= 0) sel.splice(i, 1); else { sel.push({ id, name }); last = { id, name }; if (Player.playing && !Player.busy) Player.play(last); }
+      render(); return;
+    }
+    if (b.dataset.all) { const id = +b.dataset.all, f = fileById(id); const all = f.st.sections.every(s => sel.some(x => x.id === id && x.name === s.name)); sel = sel.filter(x => x.id !== id); if (!all) for (const s of f.st.sections) sel.push({ id, name: s.name }); render(); return; }
+    if (b.dataset.close) return closeFile(+b.dataset.close);
+    if (b.dataset.dup) { const f = fileById(+b.dataset.dup); const st = StyCore.snapshot(f.st); st.name = f.st.name.replace(/(\.[^.]+)?$/, m => " (copia)" + (m || ".sty")); st.dirty = true; files.splice(files.indexOf(f) + 1, 0, { id: nextId++, st }); render(); toast("Copia creada"); return; }
+    if (b.dataset.save) return saveFile(+b.dataset.save);
+  };
+  $("#clr").onclick = () => { sel = []; render(); };
+
+  // ---------- Diálogos ----------
+  function dialog(html, onOk) {
+    const d = $("#dlg"), body = $("#dlgBody");
+    body.innerHTML = html;
+    body.onsubmit = ev => { const v = ev.submitter && ev.submitter.value; if (v === "ok") { const r = onOk(body); if (r === false) { ev.preventDefault(); } } };
+    d.showModal();
+    return body;
+  }
+
+  function closeFile(id) {
+    const f = fileById(id);
+    const go = () => { files.splice(files.indexOf(f), 1); sel = sel.filter(x => x.id !== id); render(); };
+    if (!f.st.dirty) return go();
+    dialog(`<h3>¿Cerrar sin guardar?</h3><p>${esc(f.st.name)} tiene cambios que no has guardado.</p>
+      <div class="acts"><button value="cancel">Cancelar</button><button value="ok" class="del">Cerrar</button></div>`, go);
+  }
+
+  function saveFile(id) {
+    const f = fileById(id);
+    const body = dialog(`<h3>Guardar estilo</h3>
+      <label class="f">Nombre del archivo<input type="text" id="fname" value="${esc(f.st.name)}"></label>
+      <p>Se guarda en la carpeta de Descargas de tu teléfono o PC.</p>
+      <div class="acts"><button value="cancel">Cancelar</button><button value="ok" class="pri">Guardar</button></div>`, b => {
+      let name = b.querySelector("#fname").value.trim() || f.st.name;
+      if (!/\.[a-z0-9]{2,4}$/i.test(name)) name += ".sty";
+      const bytes = StyCore.build(f.st);
+      download(bytes, name);
+      f.st.name = name; f.st.dirty = false; render(); toast("Guardado: " + name);
+    });
+    const inp = body.querySelector("#fname"); inp.focus(); inp.setSelectionRange(0, inp.value.replace(/\.[^.]+$/, "").length);
+  }
+  function download(bytes, name) {
+    if (window.AndroidSaver) { // dentro de la app Android
+      let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      window.AndroidSaver.save(name, btoa(s)); return;
+    }
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  // Eliminar
+  $("#bDel").onclick = () => {
+    const by = groupSel();
+    const lines = by.map(([id, names]) => `<b>${esc(fileById(id).st.name)}</b>: ${names.map(esc).join(", ")}`).join("<br>");
+    dialog(`<h3>Eliminar ${sel.length === 1 ? "sección" : sel.length + " secciones"}</h3><p>${lines}</p>
+      <div class="acts"><button value="cancel">Cancelar</button><button value="ok" class="del">Eliminar</button></div>`, () => {
+      pushUndo(by.map(x => x[0]), "eliminar");
+      for (const [id, names] of by) for (const n of names) StyCore.remove(fileById(id).st, n);
+      const n = sel.length; sel = []; render(); toast(n === 1 ? "Sección eliminada" : n + " secciones eliminadas");
+    });
+  };
+  function groupSel() { const m = new Map(); for (const s of sel) { if (!m.has(s.id)) m.set(s.id, []); m.get(s.id).push(s.name); } return [...m.entries()]; }
+
+  // Ranuras posibles del mismo tipo
+  function slotsFor(name) { const k = StyCore.kind(name); return k === "Otra" ? [name] : StyCore.SLOTS.filter(s => StyCore.kind(s) === k); }
+  const fillOf = main => /^Main [A-D]$/.test(main) ? "Fill In " + main.slice(-1) + main.slice(-1) : null;
+
+  // Copiar / mover
+  function transfer(move) {
+    const srcIds = [...new Set(sel.map(s => s.id))];
+    if (files.length < 2 && !move) { /* copiar dentro del mismo archivo está permitido */ }
+    const items = sel.map(s => ({ ...s }));
+    const hasMain = items.some(x => fillOf(x.name));
+    const defDest = (files.find(f => !srcIds.includes(f.id)) || files[0]).id;
+    const checked = new Set([defDest]);
+    const tg = {};   // tg[destId][i] = letra elegida
+    const body = dialog(`<h3>${move ? "Mover" : "Copiar"} ${items.length === 1 ? "sección" : items.length + " secciones"}</h3>
+      <div class="f">A los archivos (puedes marcar varios)</div>
+      <div class="dests" id="dests">${files.map(f => `<label class="chk dst"><input type="checkbox" value="${f.id}"${checked.has(f.id) ? " checked" : ""}> <span>${esc(f.st.name)}${srcIds.includes(f.id) ? " <small>(origen)</small>" : ""}</span></label>`).join("")}</div>
+      <div class="map" id="map"></div>
+      ${hasMain ? `<label class="chk"><input type="checkbox" id="withFill" checked> Llevar también el Fill In de cada Main</label>` : ""}
+      <div class="note">La sección se lleva sus notas y su ajuste de acordes (CASM). Sonará con los instrumentos del archivo de destino.</div>
+      <div class="warn" id="warn"></div>
+      <div class="acts"><button value="cancel">Cancelar</button><button value="ok" class="pri">${move ? "Mover" : "Copiar"}</button></div>`, b => {
+      const dsts = [...checked].map(fileById).filter(Boolean);
+      if (!dsts.length) { b.querySelector("#warn").textContent = "Marca al menos un archivo de destino."; return false; }
+      const withFill = b.querySelector("#withFill") ? b.querySelector("#withFill").checked : false;
+      const jobs = [];
+      for (const d of dsts) {
+        const mine = items.map((it, i) => ({ dst: d, src: fileById(it.id), name: it.name, to: tg[d.id][i] }));
+        if (new Set(mine.map(j => j.to)).size !== mine.length) { b.querySelector("#warn").textContent = `En ${d.st.name} dos secciones van al mismo lugar. Cambia una.`; return false; }
+        if (withFill) for (const j of [...mine]) {
+          const fl = fillOf(j.name), tf = fillOf(j.to);
+          if (fl && tf && StyCore.get(j.src.st, fl) && !mine.some(x => x.src === j.src && x.name === fl) && !mine.some(x => x.to === tf)) mine.push({ dst: d, src: j.src, name: fl, to: tf });
+        }
+        jobs.push(...mine);
+      }
+      const real = jobs.filter(j => !(j.src === j.dst && j.name === j.to));
+      if (!real.length) { toast("No hay nada que cambiar"); return; }
+      const touched = [...new Set([...dsts.map(d => d.id), ...(move ? real.map(j => j.src.id) : [])])];
+      pushUndo(touched, move ? "mover" : "copiar");
+      // Fotos de los originales antes de tocar nada
+      const snaps = new Map([...new Set(real.map(j => j.src))].map(f => [f.id, StyCore.snapshot(f.st)]));
+      for (const j of real) StyCore.copy(snaps.get(j.src.id), j.name, j.dst.st, j.to);
+      if (move) {
+        const done = new Set();
+        for (const j of real) {
+          const k = j.src.id + "|" + j.name; if (done.has(k)) continue; done.add(k);
+          if (!jobs.some(x => x.dst === j.src && x.to === j.name)) StyCore.remove(j.src.st, j.name);
+        }
+      }
+      sel = []; render();
+      const n = new Set(real.map(j => j.src.id + "|" + j.name)).size;
+      toast(`${n === 1 ? "1 sección" : n + " secciones"} ${move ? "movidas" : "copiadas"} a ${dsts.length === 1 ? dsts[0].st.name : dsts.length + " archivos"}`);
+    });
+    const fillMap = () => {
+      const html = [];
+      for (const d of files.filter(f => checked.has(f.id))) {
+        const used = new Set(), prev = tg[d.id];
+        tg[d.id] = items.map((it, i) => {
+          const src = fileById(it.id), opts = slotsFor(it.name);
+          let def = prev && prev[i] && opts.includes(prev[i]) && !used.has(prev[i]) ? prev[i] : null;
+          if (!def) def = [it.name, ...opts].find(o => !used.has(o) && !StyCore.get(d.st, o));
+          if (!def) def = !used.has(it.name) ? it.name : (opts.find(o => !used.has(o)) || it.name);
+          used.add(def); return def;
+        });
+        html.push(`<div class="mh">${checked.size > 1 || srcIds.length > 1 ? "→ " + esc(d.st.name) : ""}</div>` + items.map((it, i) => {
+          const src = fileById(it.id), opts = slotsFor(it.name);
+          const srcLabel = (srcIds.length > 1 ? esc(src.st.name.replace(/\.[^.]+$/, "")) + " · " : "") + esc(it.name);
+          return `<div class="r"><span>${srcLabel}</span><em>→</em><select data-d="${d.id}" data-i="${i}">${opts.map(o => `<option value="${esc(o)}"${o === tg[d.id][i] ? " selected" : ""}>${esc(o === "Fill In BA" ? "Break (Fill In BA)" : o)}${StyCore.get(d.st, o) ? " · reemplaza" : ""}</option>`).join("")}</select></div>`;
+        }).join(""));
+      }
+      body.querySelector("#map").innerHTML = html.join("");
+      checkWarn();
+    };
+    const checkWarn = () => {
+      const ws = [];
+      for (const d of files.filter(f => checked.has(f.id))) {
+        const rep = (tg[d.id] || []).filter(t => StyCore.get(d.st, t));
+        if (rep.length) ws.push(`En ${d.st.name} se reemplazará: ${[...new Set(rep)].join(", ")}.`);
+        if (items.some(it => fileById(it.id).st.timeSig.join("/") !== d.st.timeSig.join("/"))) ws.push(`Ojo: el compás de ${d.st.name} no es el mismo que el de origen.`);
+      }
+      body.querySelector("#warn").textContent = ws.join(" ");
+    };
+    body.querySelector("#dests").onchange = e => { const id = +e.target.value; if (e.target.checked) checked.add(id); else checked.delete(id); fillMap(); };
+    body.querySelector("#map").onchange = e => { const s = e.target; tg[+s.dataset.d][+s.dataset.i] = s.value; checkWarn(); };
+    fillMap();
+  }
+  $("#bCopy").onclick = () => transfer(false);
+  $("#bMove").onclick = () => transfer(true);
+
+  // Cambiar letra (dentro del mismo archivo, intercambia si está ocupada)
+  $("#bRen").onclick = () => {
+    const it = sel[0], f = fileById(it.id), opts = slotsFor(it.name).filter(o => o !== it.name);
+    if (!opts.length) { toast("Esta sección no tiene otra letra posible"); return; }
+    dialog(`<h3>Cambiar letra de ${esc(it.name)}</h3>
+      <label class="f">Nueva posición<select id="to">${opts.map(o => `<option value="${esc(o)}">${esc(o === "Fill In BA" ? "Break" : o)}${StyCore.get(f.st, o) ? " · se intercambian" : ""}</option>`).join("")}</select></label>
+      <p>Si la nueva posición ya está ocupada, las dos secciones se intercambian.</p>
+      <div class="acts"><button value="cancel">Cancelar</button><button value="ok" class="pri">Cambiar</button></div>`, b => {
+      const to = b.querySelector("#to").value;
+      pushUndo([f.id], "cambiar letra");
+      StyCore.rename(f.st, it.name, to);
+      sel = []; render(); toast(`${it.name} ahora es ${to}`);
+    });
+  };
+
+  // Deshacer / rehacer
+  function swap(from, to, verb) {
+    const u = from.pop(); if (!u) return;
+    to.push({ label: u.label, items: u.items.map(it => { const f = fileById(it.id); return f ? { id: it.id, st: StyCore.snapshot(f.st) } : null; }).filter(Boolean) });
+    for (const it of u.items) { const f = fileById(it.id); if (f) f.st = it.st; }
+    sel = []; render(); toast(verb + ": " + u.label);
+  }
+  $("#undo").onclick = () => swap(undo, redo, "Deshecho");
+  $("#redo").onclick = () => swap(redo, undo, "Rehecho");
+
+  // ---------- Temas de color (los mismos 10 de StyPlayer) ----------
+  const H = n => "#" + n.toString(16).padStart(6, "0");
+  const THEMES = [
+    ["Noche (original)", 0, 0x0E1015, 0x181C24, 0x262C38, 0xECEFF4, 0x8A93A6, 0xFBBF24],
+    ["Océano", 0, 0x06141F, 0x0D2232, 0x16364A, 0xE6F6FF, 0x7FA6BD, 0x22D3EE],
+    ["Bosque", 0, 0x0B130D, 0x142118, 0x1F3325, 0xE8F5EA, 0x8FAE96, 0x4ADE80],
+    ["Atardecer", 0, 0x170C10, 0x24131A, 0x3A1D28, 0xFFEDF2, 0xB78C99, 0xFB7185],
+    ["Púrpura", 0, 0x110C1C, 0x1B1430, 0x2B2148, 0xF1ECFF, 0x9C93BD, 0xA78BFA],
+    ["Rojo escenario", 0, 0x120707, 0x1F0D0D, 0x331616, 0xFFECEC, 0xB48A8A, 0xEF4444],
+    ["Grafito", 0, 0x111111, 0x1B1B1B, 0x2A2A2A, 0xF2F2F2, 0x9A9A9A, 0xE5E5E5],
+    ["Retro LCD", 0, 0x12140C, 0x1D2114, 0x2C3220, 0xEEF2DC, 0x9CA38A, 0xC3E067],
+    ["Claro", 1, 0xEEF1F6, 0xFFFFFF, 0xDDE3EC, 0x1A1F2B, 0x5D6778, 0x2563EB],
+    ["Arena", 1, 0xF5EFE4, 0xFFFBF3, 0xE8DCC6, 0x2E2418, 0x7A6A55, 0xB45309]
+  ];
+  function applyTheme(i) {
+    const t = THEMES[i] || THEMES[0], r = document.documentElement.style;
+    r.setProperty("--bg", H(t[2])); r.setProperty("--panel", H(t[3])); r.setProperty("--panel2", H(t[4])); r.setProperty("--text", H(t[5]));
+    r.setProperty("--mute", H(t[6])); r.setProperty("--accent", H(t[7])); r.setProperty("--line", `color-mix(in srgb, ${H(t[5])} 16%, ${H(t[3])})`);
+    r.setProperty("--onacc", t[1] ? "#fff" : "#111"); r.setProperty("--danger", t[1] ? "#d92d2d" : "#ff5b5b");
+    r.colorScheme = t[1] ? "light" : "dark";
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = H(t[2]);
+    try { localStorage.setItem("styed.theme", i); } catch (e) { }
+  }
+  let themeI = 0; try { themeI = Math.max(0, Math.min(THEMES.length - 1, +localStorage.getItem("styed.theme") || 0)); } catch (e) { }
+  applyTheme(themeI);
+  $("#themeBtn").onclick = () => {
+    const d = $("#dlg"), body = $("#dlgBody"); body.onsubmit = null; body.onclick = null; body.onchange = null;
+    body.innerHTML = `<h3>Tema de colores</h3><div class="themes">${THEMES.map((t, i) => `<button type="button" class="th${i === themeI ? " on" : ""}" data-t="${i}" style="background:${H(t[2])};color:${H(t[5])};border-color:${i === themeI ? H(t[7]) : H(t[4])}"><span class="sw"><i style="background:${H(t[3])}"></i><i style="background:${H(t[4])}"></i><i style="background:${H(t[7])}"></i></span>${esc(t[0])}</button>`).join("")}</div>
+      <div class="acts"><button type="button" class="pri" data-x="1">Listo</button></div>`;
+    body.onclick = e => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.x) { d.close(); return; } themeI = +b.dataset.t; applyTheme(themeI); body.querySelectorAll(".th").forEach(x => { const on = +x.dataset.t === themeI; x.classList.toggle("on", on); x.style.borderColor = on ? H(THEMES[+x.dataset.t][7]) : H(THEMES[+x.dataset.t][4]); }); };
+    d.addEventListener("close", () => { body.onclick = null; }, { once: true });
+    d.showModal();
+  };
+
+  // ---------- Editar sección (detalle) ----------
+  const NOTE_N = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const ed = { id: 0, name: "", muted: new Set(), panel: null };   // panel: {k:"copy"|"casm", ch}
+  const opt = (arr, v, extra) => arr.map((t, i) => `<option value="${i}"${i === v ? " selected" : ""}>${esc(t)}</option>`).join("") + (v >= arr.length ? `<option value="${v}" selected>${extra || "Otro"} (${v})</option>` : "");
+  function edCur() { const f = fileById(ed.id); return f ? { f, st: f.st, sec: StyCore.get(f.st, ed.name) } : null; }
+  function edHtml() {
+    const c = edCur(); if (!c || !c.sec) return `<h3>La sección ya no existe</h3><div class="acts"><button type="button" data-ed="close">Cerrar</button></div>`;
+    const { st, sec } = c, tracks = StyCore.trackStats(sec);
+    const bars = StyCore.bars(st, sec);
+    const rows = tracks.map(t => `<div class="trk${ed.muted.has(t.ch) ? " mut" : ""}">
+        <div class="th"><label class="chk"><input type="checkbox" data-ed="mute" data-ch="${t.ch}"${ed.muted.has(t.ch) ? "" : " checked"}> <b>${StyCore.CH_NAMES[t.ch]}</b></label>
+          <small>${t.notes} notas · fuerza ${t.vel} · ${NOTE_N[t.min % 12]}${Math.floor(t.min / 12) - 1}–${NOTE_N[t.max % 12]}${Math.floor(t.max / 12) - 1}</small></div>
+        <div class="tb">
+          <button type="button" data-ed="vel" data-ch="${t.ch}" data-v="88">Fuerza −</button><button type="button" data-ed="vel" data-ch="${t.ch}" data-v="114">Fuerza +</button>
+          <button type="button" data-ed="oct" data-ch="${t.ch}" data-v="-12">Octava ↓</button><button type="button" data-ed="oct" data-ch="${t.ch}" data-v="12">Octava ↑</button>
+          <button type="button" data-ed="panel" data-k="copy" data-ch="${t.ch}">Copiar a…</button>
+          <button type="button" data-ed="panel" data-k="casm" data-ch="${t.ch}"${StyCore.casmGet(st, sec.name, t.ch) ? "" : " disabled"}>Acordes (CASM)</button>
+          <button type="button" class="del" data-ed="del" data-ch="${t.ch}">Quitar pista</button></div>
+        ${ed.panel && ed.panel.ch === t.ch ? edPanel(c, t) : ""}
+      </div>`).join("");
+    return `<h3>Editar ${esc(sec.name)} <small style="color:var(--mute);font-weight:400">· ${esc(st.name)}</small></h3>
+      <div class="edtop"><button type="button" class="pri" data-ed="play">${Player.playing ? "■ Parar" : "▶ Escuchar"}</button>
+        <label class="chk"><input type="checkbox" data-ed="loop"${$("#loop").checked ? " checked" : ""}> Repetir</label>
+        <button type="button" data-ed="undo"${undo.length ? "" : " disabled"}>↶ Deshacer</button><button type="button" data-ed="redo"${redo.length ? "" : " disabled"}>↷ Rehacer</button></div>
+      <div class="edbox"><b>Duración</b> <span class="mute">ahora: ${bars} compases</span>
+        <div class="edrow"><input type="number" id="edBars" min="1" max="64" step="1" value="${Math.max(1, Math.round(bars))}">
+        <button type="button" data-ed="trim">Poner en ese largo</button><button type="button" data-ed="rep">Repetir hasta ese largo</button></div>
+        <small class="mute">"Poner en ese largo" recorta, o deja silencio al final si lo alargas. "Repetir" llena el largo repitiendo la sección.</small></div>
+      <div class="edbox"><b>Pistas</b> <span class="mute">la casilla solo silencia al escuchar; "Quitar pista" sí borra las notas</span>${rows || "<p>Esta sección no tiene notas.</p>"}</div>
+      <div class="acts"><button type="button" class="pri" data-ed="close">Listo</button></div>`;
+  }
+  function edPanel(c, t) {
+    const { st, sec } = c;
+    if (ed.panel.k === "copy") {
+      const all = []; for (const f of files) for (const s of f.st.sections) all.push({ v: f.id + "|" + s.name, t: `${f.st.name} · ${s.name}` });
+      return `<div class="pnl"><div class="mute">Copiar la pista ${StyCore.CH_NAMES[t.ch]} de ${esc(sec.name)} a:</div>
+        <select id="cpDst">${all.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("")}</select>
+        <select id="cpCh">${StyCore.CH_NAMES.map((n, i) => `<option value="${i}"${i === t.ch ? " selected" : ""}>en ${n}</option>`).join("")}</select>
+        <div class="mute">Reemplaza esa pista en la otra sección. Se lleva su CASM y se repite o recorta para que quepa en el largo de destino.</div>
+        <button type="button" class="pri" data-ed="docopy" data-ch="${t.ch}">Copiar pista</button></div>`;
+    }
+    const g = StyCore.casmGet(st, sec.name, t.ch); if (!g) return "";
+    return `<div class="pnl casm"><div class="mute">Cómo se adapta ${StyCore.CH_NAMES[t.ch]} cuando cambias de acorde${g.two ? " (se edita la zona media)" : ""}</div>
+      <label class="f">Nota del acorde de origen<select data-cs="srcRoot">${opt(NOTE_N, g.srcRoot)}</select></label>
+      <label class="f">Tipo de acorde de origen<select data-cs="srcType">${opt(StyCore.CHORD_TYPES, g.srcType)}</select></label>
+      <label class="f">Transposición<select data-cs="ntr">${opt(StyCore.NTR, g.ntr)}</select></label>
+      <label class="f">Tipo de nota<select data-cs="ntt">${opt(StyCore.NTT, g.ntt)}</select></label>
+      <label class="f">Nota más alta (sube/baja)<select data-cs="highKey">${opt(NOTE_N, g.highKey)}</select></label>
+      <label class="f">Al cambiar de acorde<select data-cs="rtr">${opt(StyCore.RTR, g.rtr)}</select></label>
+      <div class="two"><label class="f">Nota mínima<input type="number" min="0" max="127" data-cs="low" value="${g.low}"></label><label class="f">Nota máxima<input type="number" min="0" max="127" data-cs="high" value="${g.high}"></label></div></div>`;
+  }
+  function edRender() { $("#dlgBody").innerHTML = edHtml(); }
+  function edChange(label, fn) {
+    const c = edCur(); if (!c) return;
+    pushUndo([c.f.id], label); fn(c); render(); edRender();
+    if (Player.playing) Player.play({ id: ed.id, name: ed.name }, ed.muted);
+  }
+  function openEditor(it) {
+    ed.id = it.id; ed.name = it.name; ed.muted = new Set(); ed.panel = null;
+    const d = $("#dlg"), body = $("#dlgBody");
+    body.onsubmit = null; body.classList.add("wide");
+    d.addEventListener("close", () => { body.classList.remove("wide"); body.onclick = null; body.onchange = null; if (Player.playing) Player.stop(); }, { once: true });
+    edRender();
+    body.onclick = e => {
+      const b = e.target.closest("[data-ed]"); if (!b || b.tagName === "INPUT") return;
+      const a = b.dataset.ed, ch = +b.dataset.ch, name = ed.name;
+      if (a === "close") { d.close(); return; }
+      if (a === "play") { if (Player.playing) Player.stop(); else Player.play({ id: ed.id, name }, ed.muted); edRender(); return; }
+      if (a === "undo") { swap(undo, redo, "Deshecho"); edRender(); return; }
+      if (a === "redo") { swap(redo, undo, "Rehecho"); edRender(); return; }
+      if (a === "trim" || a === "rep") { const n = Math.max(1, Math.min(64, +$("#edBars").value || 1)); edChange("cambiar duración", c => StyCore.setBars(c.st, name, n, a === "rep" ? "repeat" : "trim")); return; }
+      if (a === "vel") return edChange("fuerza de pista", c => StyCore.trackVel(c.st, name, ch, +b.dataset.v));
+      if (a === "oct") return edChange("octava de pista", c => StyCore.trackOct(c.st, name, ch, +b.dataset.v));
+      if (a === "del") return edChange("quitar pista", c => StyCore.trackRemove(c.st, name, ch));
+      if (a === "panel") { ed.panel = ed.panel && ed.panel.k === b.dataset.k && ed.panel.ch === ch ? null : { k: b.dataset.k, ch }; edRender(); return; }
+      if (a === "docopy") {
+        const [fid, sn] = $("#cpDst").value.split("|"), dch = +$("#cpCh").value, dst = fileById(+fid);
+        pushUndo([dst.id], "copiar pista");
+        try { StyCore.copyTrack(edCur().st, name, ch, dst.st, sn, dch); } catch (err) { toast(err.message); return; }
+        ed.panel = null; render(); edRender(); toast(`Pista copiada a ${sn} de ${dst.st.name}`); return;
+      }
+    };
+    body.onchange = e => {
+      const t = e.target;
+      if (t.dataset.ed === "mute") { const ch = +t.dataset.ch; if (t.checked) ed.muted.delete(ch); else ed.muted.add(ch); edRender(); if (Player.playing) Player.play({ id: ed.id, name: ed.name }, ed.muted); }
+      else if (t.dataset.ed === "loop") { $("#loop").checked = t.checked; $("#loop").onchange(); }
+      else if (t.dataset.cs) { const k = t.dataset.cs, v = Math.max(0, Math.min(127, +t.value | 0)); const ch = ed.panel && ed.panel.ch; edChange("CASM de pista", c => StyCore.casmSet(c.st, ed.name, ch, { [k]: v })); }
+    };
+    d.showModal();
+  }
+  $("#bEdit").onclick = () => { if (sel.length === 1) openEditor(sel[0]); };
+
+  // ---------- Escuchar (siempre en C) ----------
+  const Player = {
+    ctx: null, node: null, sf2: false, playing: false, busy: false,
+    async init() {
+      if (this.node) return true;
+      this.ctx = new AudioContext({ sampleRate: 44100, latencyHint: "playback" });
+      const src = document.getElementById("engine-src").textContent;
+      try { await this.ctx.audioWorklet.addModule("data:application/javascript;charset=utf-8," + encodeURIComponent(src)); }
+      catch (e) { await this.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([src], { type: "application/javascript" }))); }
+      this.node = new AudioWorkletNode(this.ctx, "sty-engine", { numberOfInputs: 0, outputChannelCount: [2] });
+      this.node.connect(this.ctx.destination);
+      this.node.port.onmessage = e => this.onMsg(e.data);
+      return true;
+    },
+    onMsg(m) {
+      if (m.t === "sf2ok") { this.sf2 = true; if (this.sf2wait) { this.sf2wait(true); this.sf2wait = null; } }
+      else if (m.t === "sf2err") { toast("SoundFont no válido: " + m.msg); if (this.sf2wait) { this.sf2wait(false); this.sf2wait = null; } }
+      else if (m.t === "st") { if (this.playing && !m.running && !this.busy && performance.now() - this.t0 > 400) { this.playing = false; paintPlay(); } }
+    },
+    sendSf2(buf) { return new Promise(r => { this.sf2wait = r; this.node.port.postMessage({ t: "sf2", buf }, [buf]); }); },
+    async loadSf2() {
+      if (this.sf2) return true;
+      const el = document.getElementById("sf2-b64"), txt = el ? el.textContent.trim() : "";
+      if (txt.length > 100) { toast("Cargando sonidos…"); const buf = await (await fetch("data:application/octet-stream;base64," + txt)).arrayBuffer(); return this.sendSf2(buf); }
+      if (window.AndroidSaver) { try { const r = await fetch("https://appassets.local/GeneralUser-GS.sf2"); if (r.ok) { toast("Cargando sonidos…"); return this.sendSf2(await r.arrayBuffer()); } } catch (e) { } }
+      const saved = await Store.get("soundfont.sf2");
+      if (saved) return this.sendSf2(saved.slice(0));
+      return pickSf2();
+    },
+    async play(it, muted) {
+      if (this.busy) return;
+      this.busy = true;
+      try {
+        await this.init();
+        if (this.ctx.state !== "running") await this.ctx.resume();
+        if (!(await this.loadSf2())) { this.busy = false; return; }
+        const f = fileById(it.id), sec = f && StyCore.get(f.st, it.name);
+        if (!sec) { this.busy = false; return; }
+        const loop = $("#loop").checked, as = loop ? "Main A" : "Ending A";
+        // Estilo temporal con solo esa sección (con su CASM): bucle = como Main, una vez = como Ending
+        const evs = muted && muted.size ? sec.events.filter(e => !(e.b[0] >= 0x80 && e.b[0] < 0xA0 && muted.has(e.b[0] & 15))) : sec.events;
+        const tmp = { ...f.st, sections: [{ name: as, len: sec.len, events: evs }], casm: [] };
+        const subs = StyCore.casmOf(f.st, it.name);
+        if (subs) tmp.casm = [{ names: [as], subs }];
+        const style = StyParser.parse(StyCore.build(tmp));
+        const msgs = [{ t: "stop" }, { t: "style", style }, { t: "set", v: { transpose: 0, auto: false } }, { t: "chord", c: mkChord(0, "maj") }, { t: "start", name: as }];
+        for (const m of msgs) this.node.port.postMessage(m);
+        this.playing = true; this.t0 = performance.now(); this.now = it;
+      } catch (e) { toast("No se pudo reproducir: " + (e.message || e)); this.playing = false; }
+      this.busy = false; paintPlay();
+    },
+    stop() { if (this.node) this.node.port.postMessage({ t: "stop" }); this.playing = false; paintPlay(); }
+  };
+  function paintPlay() {
+    $("#bar .play").classList.toggle("on", Player.playing);
+    $("#bPlay").textContent = Player.playing ? "■ Parar" : "▶ Escuchar";
+  }
+  $("#bPlay").onclick = () => { if (Player.playing) Player.stop(); else if (last) Player.play(last); };
+  try { $("#loop").checked = localStorage.getItem("styed.loop") === "1"; } catch (e) { }
+  $("#loop").onchange = () => { try { localStorage.setItem("styed.loop", $("#loop").checked ? "1" : "0"); } catch (e) { } if (Player.playing && last) Player.play(last); };
+  function pickSf2() {
+    return new Promise(res => {
+      dialog(`<h3>Falta el SoundFont</h3><p>Esta versión ligera no trae sonidos. Elige un archivo .sf2 (por ejemplo GeneralUser GS). Se guarda en el navegador y no lo vuelve a pedir.</p>
+        <div class="acts"><button value="cancel">Cancelar</button><button value="ok" class="pri">Elegir .sf2</button></div>`, () => {
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".sf2";
+        inp.onchange = async () => { const f = inp.files[0]; if (!f) return res(false); toast("Cargando sonidos…"); const buf = await f.arrayBuffer(); try { await Store.set("soundfont.sf2", buf.slice(0)); } catch (e) { } res(await Player.sendSf2(buf)); };
+        inp.click();
+      });
+      $("#dlg").addEventListener("close", () => { if ($("#dlg").returnValue !== "ok") res(false); }, { once: true });
+    });
+  }
+  const Store = {
+    db() { return new Promise((ok, ko) => { const r = indexedDB.open("sty-editor", 1); r.onupgradeneeded = () => r.result.createObjectStore("f"); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); },
+    async get(k) { try { const db = await this.db(); return await new Promise(ok => { const q = db.transaction("f").objectStore("f").get(k); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); } catch (e) { return null; } },
+    async set(k, v) { const db = await this.db(); return new Promise(ok => { const t = db.transaction("f", "readwrite"); t.objectStore("f").put(v, k); t.oncomplete = ok; t.onerror = ok; }); }
+  };
+
+  addEventListener("beforeunload", e => { if (files.some(f => f.st.dirty)) { e.preventDefault(); e.returnValue = ""; } });
+  window.StyEditor = { openBytes(name, b64) { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); try { files.push({ id: nextId++, st: StyCore.parse(u, name) }); } catch (e) { toast(`No pude abrir ${name}: ${e.message}`); } render(); }, toast };
+  render();
+})();
+</script>
+</body>
+</html>
